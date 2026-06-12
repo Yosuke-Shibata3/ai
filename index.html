@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>クレーン解体 — Wrecking Ball Demolition</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #0b1020;
+    font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    -webkit-user-select: none; user-select: none; touch-action: none;
+  }
+  #stage {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  canvas {
+    background: #87b7e8;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    border-radius: 6px;
+    max-width: 100%; max-height: 100%;
+    display: block;
+  }
+
+  /* HUD */
+  #hud {
+    position: absolute; top: 16px; left: 16px; right: 16px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    pointer-events: none; gap: 12px; flex-wrap: wrap;
+  }
+  .panel {
+    background: rgba(10,16,32,.72);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    padding: 10px 14px;
+    backdrop-filter: blur(6px);
+    color: #eaf0ff;
+  }
+  .stats { display: flex; gap: 22px; }
+  .stat .label { font-size: 11px; letter-spacing: .12em; opacity: .65; text-transform: uppercase; }
+  .stat .value { font-size: 24px; font-weight: 800; line-height: 1.1; }
+  .stat .value.gold { color: #ffd24a; }
+  .stat .value.green { color: #57e08a; }
+  .hint { font-size: 12.5px; line-height: 1.6; opacity: .9; max-width: 240px; }
+  .hint b { color: #ffd24a; }
+
+  /* Buttons */
+  #controls {
+    position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  }
+  button {
+    pointer-events: auto;
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    color: #0b1020; background: #ffd24a;
+    border: none; border-radius: 10px;
+    padding: 11px 18px; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,.35);
+    transition: transform .08s ease, filter .15s ease;
+  }
+  button.ghost { background: rgba(255,255,255,.14); color: #eaf0ff; }
+  button:hover { filter: brightness(1.08); }
+  button:active { transform: translateY(2px); }
+
+  /* Overlay */
+  #overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 30%, rgba(20,30,60,.72), rgba(5,8,18,.92));
+    z-index: 10; text-align: center; padding: 20px;
+  }
+  #overlay.hidden { display: none; }
+  .card {
+    background: rgba(12,18,38,.9);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 20px; padding: 34px 40px; max-width: 520px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6);
+  }
+  .card h1 { font-size: 34px; margin-bottom: 6px; color: #ffd24a; letter-spacing: .02em; }
+  .card .sub { opacity: .8; margin-bottom: 22px; font-size: 15px; color:#cfe; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; text-align: left;
+          margin: 0 auto 26px; max-width: 380px; font-size: 14px; color:#dde7ff; }
+  kbd {
+    display: inline-block; min-width: 26px; text-align: center;
+    background: #2a3656; border: 1px solid #4a5b86; border-bottom-width: 3px;
+    border-radius: 6px; padding: 3px 8px; font-weight: 700; font-size: 13px; color:#fff;
+  }
+  .big {
+    font-size: 18px; padding: 14px 30px; background: #57e08a; color:#06210f;
+  }
+  #toast {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.6);
+    font-size: 52px; font-weight: 900; color: #fff;
+    text-shadow: 0 4px 24px rgba(0,0,0,.6); opacity: 0; pointer-events: none;
+    z-index: 8; letter-spacing: .02em;
+  }
+  #toast.show { animation: pop 1.4s ease forwards; }
+  @keyframes pop {
+    0% { opacity: 0; transform: translate(-50%,-50%) scale(.6); }
+    18% { opacity: 1; transform: translate(-50%,-58%) scale(1.05); }
+    78% { opacity: 1; transform: translate(-50%,-58%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-70%) scale(1); }
+  }
+</style>
+</head>
+<body>
+  <div id="stage"><canvas id="c" width="1280" height="720"></canvas></div>
+
+  <div id="hud">
+    <div class="panel stats">
+      <div class="stat"><div class="label">SCORE</div><div class="value gold" id="score">0</div></div>
+      <div class="stat"><div class="label">解体率</div><div class="value green" id="pct">0%</div></div>
+      <div class="stat"><div class="label">LEVEL</div><div class="value" id="level">1</div></div>
+    </div>
+    <div class="panel hint">
+      🖱️ <b>鉄球をドラッグ</b>して引っぱり、離して建物にぶつける<br>
+      ⌨️ <b>A / D</b> クレーン移動 · <b>W / S</b> ワイヤー伸縮 · <b>Space</b> 鉄球リセット
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="btnReset" class="ghost">鉄球リセット (Space)</button>
+    <button id="btnNext" class="ghost">次の建物 ⟳</button>
+    <button id="btnRebuild" class="ghost">この建物を再建</button>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="overlay">
+    <div class="card">
+      <h1>🏗️ クレーン解体</h1>
+      <div class="sub">鉄球を振り回して建物をぶっ壊せ！</div>
+      <div class="keys">
+        <span><kbd>🖱️ Drag</kbd></span><span>鉄球をつかんで引っぱる → 離してスイング</span>
+        <span><kbd>A</kbd> <kbd>D</kbd></span><span>クレーン（トロリー）を左右に移動</span>
+        <span><kbd>W</kbd> <kbd>S</kbd></span><span>ワイヤーを伸ばす / 縮める</span>
+        <span><kbd>Space</kbd></span><span>鉄球を真上に戻す</span>
+      </div>
+      <button class="big" id="btnStart">解体スタート 🔨</button>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const {
+    Engine, World, Bodies, Body, Composite, Constraint,
+    MouseConstraint, Mouse, Events, Vector, Common
+  } = Matter;
+
+  // ---- Virtual resolution (canvas scales via CSS) ----
+  const W = 1280, H = 720;
+  const GROUND_Y = 660;          // top of ground
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+
+  // ---- Engine ----
+  const engine = Engine.create();
+  engine.gravity.y = 1.15;
+  const world = engine.world;
+
+  // Collision categories
+  const CAT_BALL  = 0x0002;
+  const CAT_BLOCK = 0x0001;
+
+  // ---- World static geometry ----
+  const ground = Bodies.rectangle(W / 2, GROUND_Y + 60, W * 2, 120, {
+    isStatic: true, friction: 1, label: "ground"
+  });
+  Composite.add(world, ground);
+
+  // ---- Crane state ----
+  const crane = {
+    mastX: 150,
+    jibY: 70,
+    jibEnd: 1180,
+    trolleyX: 760,
+    chainLen: 300,
+  };
+  const TROLLEY_MIN = crane.mastX + 90;
+  const TROLLEY_MAX = crane.jibEnd - 30;
+  const CHAIN_MIN = 140, CHAIN_MAX = 460;
+
+  // ---- Wrecking ball + chain constraint ----
+  const BALL_R = 36;
+  let ball = null;
+  let chain = null;
+
+  function spawnBall() {
+    if (ball) { Composite.remove(world, ball); Composite.remove(world, chain); }
+    ball = Bodies.circle(crane.trolleyX, crane.jibY + crane.chainLen, BALL_R, {
+      density: 0.05,            // heavy
+      friction: 0.4,
+      frictionAir: 0.004,
+      restitution: 0.18,
+      label: "ball",
+      collisionFilter: { category: CAT_BALL }
+    });
+    chain = Constraint.create({
+      pointA: { x: crane.trolleyX, y: crane.jibY },
+      bodyB: ball,
+      length: crane.chainLen,
+      stiffness: 1,
+      damping: 0.02,
+    });
+    Composite.add(world, [ball, chain]);
+  }
+
+  // ---- Buildings ----
+  let blocks = [];
+  let level = 1;
+  let score = 0;
+  let totalBlocks = 0;
+
+  const PALETTES = [
+    ["#c0392b", "#e74c3c", "#a93226"],   // brick red
+    ["#2c6e8f", "#3498db", "#21618c"],   // blue glass
+    ["#7d6608", "#b7950b", "#9a7d0a"],   // sand
+    ["#117a65", "#16a085", "#0e6655"],   // teal
+    ["#6c3483", "#8e44ad", "#5b2c6f"],   // purple
+  ];
+
+  function clearBlocks() {
+    blocks.forEach(b => Composite.remove(world, b));
+    blocks = [];
+  }
+
+  function addBlock(x, y, w, h, color) {
+    const b = Bodies.rectangle(x, y, w, h, {
+      friction: 0.6, frictionStatic: 1, restitution: 0.05, density: 0.004,
+      collisionFilter: { category: CAT_BLOCK },
+      render: { fillStyle: color },
+      label: "block"
+    });
+    b.plugin = { startX: x, startY: y, color, w, h, destroyed: false };
+    blocks.push(b);
+    Composite.add(world, b);
+    return b;
+  }
+
+  // Build a tower of stacked bricks (and a couple of structures for higher levels)
+  function buildLevel(n) {
+    clearBlocks();
+    const palette = PALETTES[(n - 1) % PALETTES.length];
+    const pick = () => palette[(Math.random() * palette.length) | 0];
+
+    const structures = Math.min(1 + Math.floor((n - 1) / 2), 3);
+    const baseRight = W - 90;
+    const totalSpan = 120 + structures * 70;
+    let startX = baseRight - totalSpan;
+    if (startX < crane.trolleyX + 120) startX = crane.trolleyX + 120;
+
+    let placed = 0;
+    for (let s = 0; s < structures; s++) {
+      const cols = 3 + ((n + s) % 3);          // width in bricks
+      const rows = 5 + n + s * 2;               // height in bricks
+      const bw = 56, bh = 30;
+      const ox = startX + s * (cols * bw + 50);
+      for (let r = 0; r < rows; r++) {
+        // brick-lay offset on alternating rows
+        const off = (r % 2) * (bw / 2);
+        const ncols = (r % 2) ? cols - 1 : cols;
+        for (let cI = 0; cI < ncols; cI++) {
+          const x = ox + off + cI * bw + bw / 2;
+          const y = GROUND_Y - r * bh - bh / 2;
+          if (x > W - bw / 2) continue;
+          addBlock(x, y, bw - 2, bh - 2, pick());
+          placed++;
+        }
+      }
+    }
+    totalBlocks = placed;
+    updateHUD();
+  }
+
+  // ---- Destruction tracking ----
+  function destroyedCount() {
+    let c = 0;
+    for (const b of blocks) {
+      const dx = b.position.x - b.plugin.startX;
+      const dy = b.position.y - b.plugin.startY;
+      const moved = Math.hypot(dx, dy);
+      const tilted = Math.abs(b.angle) > 0.5;
+      if (moved > 55 || tilted) {
+        if (!b.plugin.destroyed) {
+          b.plugin.destroyed = true;
+          score += 100;
+          spawnDust(b.position.x, b.position.y, b.plugin.color, 6);
+        }
+        c++;
+      }
+    }
+    return c;
+  }
+
+  let cleared = false;
+  function checkClear(pct) {
+    if (!cleared && pct >= 92 && totalBlocks > 0) {
+      cleared = true;
+      score += 500;            // clear bonus
+      showToast("解体完了！ +500", "#57e08a");
+      setTimeout(() => { level++; cleared = false; buildLevel(level); resetBall(); }, 1500);
+    }
+  }
+
+  // ---- Dust particles ----
+  const dust = [];
+  function spawnDust(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+      dust.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 5,
+        vy: -Math.random() * 4 - 1,
+        life: 1, r: 3 + Math.random() * 6,
+        color: Math.random() < 0.5 ? color : "#cdbfae"
+      });
+    }
+  }
+  function updateDust() {
+    for (let i = dust.length - 1; i >= 0; i--) {
+      const p = dust[i];
+      p.x += p.vx; p.y += p.vy; p.vy += 0.18; p.vx *= 0.98;
+      p.life -= 0.02;
+      if (p.life <= 0) dust.splice(i, 1);
+    }
+  }
+
+  // Camera shake
+  let shake = 0;
+
+  // ---- Collision -> dust + shake on hard hits ----
+  Events.on(engine, "collisionStart", function (ev) {
+    for (const pair of ev.pairs) {
+      const { bodyA, bodyB } = pair;
+      const involvesBall = bodyA.label === "ball" || bodyB.label === "ball";
+      const speed = ball ? Vector.magnitude(ball.velocity) : 0;
+      if (involvesBall && speed > 6) {
+        const other = bodyA.label === "ball" ? bodyB : bodyA;
+        if (other.label === "block") {
+          const cp = pair.collision.supports[0] || other.position;
+          spawnDust(cp.x, cp.y, other.plugin ? other.plugin.color : "#ccc", Math.min(20, speed * 1.5 | 0));
+          shake = Math.min(18, speed);
+        }
+      }
+    }
+  });
+
+  // ---- Input ----
+  const keys = {};
+  window.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.code === "Space") { e.preventDefault(); resetBall(); }
+  });
+  window.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+
+  function applyKeys() {
+    const moveSpeed = 7, chainSpeed = 5;
+    if (keys["a"] || keys["arrowleft"])  crane.trolleyX -= moveSpeed;
+    if (keys["d"] || keys["arrowright"]) crane.trolleyX += moveSpeed;
+    if (keys["w"] || keys["arrowup"])    crane.chainLen -= chainSpeed;
+    if (keys["s"] || keys["arrowdown"])  crane.chainLen += chainSpeed;
+    crane.trolleyX = Math.max(TROLLEY_MIN, Math.min(TROLLEY_MAX, crane.trolleyX));
+    crane.chainLen = Math.max(CHAIN_MIN, Math.min(CHAIN_MAX, crane.chainLen));
+    if (chain) {
+      chain.pointA.x = crane.trolleyX;
+      chain.pointA.y = crane.jibY;
+      chain.length = crane.chainLen;
+    }
+  }
+
+  function resetBall() {
+    if (!ball) return;
+    Body.setPosition(ball, { x: crane.trolleyX, y: crane.jibY + crane.chainLen });
+    Body.setVelocity(ball, { x: 0, y: 0 });
+    Body.setAngularVelocity(ball, 0);
+  }
+
+  // Mouse drag (only grabs the ball)
+  const mouse = Mouse.create(canvas);
+  const mc = MouseConstraint.create(engine, {
+    mouse,
+    constraint: { stiffness: 0.2, damping: 0.1, render: { visible: false } },
+    collisionFilter: { mask: CAT_BALL }
+  });
+  Composite.add(world, mc);
+
+  // ---- HUD ----
+  const el = id => document.getElementById(id);
+  function updateHUD() {
+    el("score").textContent = score;
+    el("level").textContent = level;
+    const pct = totalBlocks ? Math.round((destroyedCount() / totalBlocks) * 100) : 0;
+    el("pct").textContent = pct + "%";
+    checkClear(pct);
+  }
+
+  function showToast(text, color) {
+    const t = el("toast");
+    t.textContent = text;
+    t.style.color = color || "#fff";
+    t.classList.remove("show"); void t.offsetWidth; t.classList.add("show");
+  }
+
+  // ---- Rendering ----
+  function drawBackground() {
+    const sky = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+    sky.addColorStop(0, "#5b9bd5");
+    sky.addColorStop(1, "#bcdcf5");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, GROUND_Y);
+
+    // distant skyline silhouette
+    ctx.fillStyle = "rgba(70,90,130,0.35)";
+    let x = 0;
+    let seed = 9;
+    while (x < W) {
+      const bw = 60 + (seed * 37 % 60);
+      const bh = 80 + (seed * 53 % 220);
+      ctx.fillRect(x, GROUND_Y - bh, bw, bh);
+      x += bw + 18;
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    }
+
+    // ground
+    const g = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+    g.addColorStop(0, "#5d7e4f");
+    g.addColorStop(1, "#3c5435");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+    ctx.fillStyle = "#6b8f5a";
+    ctx.fillRect(0, GROUND_Y, W, 6);
+  }
+
+  function drawCrane() {
+    const { mastX, jibY, jibEnd, trolleyX, chainLen } = crane;
+    ctx.lineCap = "round";
+
+    // mast (lattice)
+    ctx.strokeStyle = "#f1c40f";
+    ctx.lineWidth = 10;
+    ctx.strokeRect(mastX - 16, jibY, 32, GROUND_Y - jibY);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(120,90,0,.6)";
+    for (let y = jibY; y < GROUND_Y; y += 34) {
+      ctx.beginPath(); ctx.moveTo(mastX - 16, y); ctx.lineTo(mastX + 16, y + 34); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mastX + 16, y); ctx.lineTo(mastX - 16, y + 34); ctx.stroke();
+    }
+
+    // jib (horizontal arm)
+    ctx.fillStyle = "#f1c40f";
+    ctx.fillRect(mastX - 16, jibY - 14, jibEnd - mastX + 16, 20);
+    // counterweight on left
+    ctx.fillStyle = "#34495e";
+    ctx.fillRect(mastX - 70, jibY - 18, 56, 40);
+
+    // trolley
+    ctx.fillStyle = "#2c3e50";
+    ctx.fillRect(trolleyX - 22, jibY - 10, 44, 22);
+    ctx.fillStyle = "#e67e22";
+    ctx.fillRect(trolleyX - 22, jibY - 10, 44, 5);
+
+    // operator cab near top of mast
+    ctx.fillStyle = "#2c3e50";
+    ctx.fillRect(mastX - 22, jibY + 6, 44, 30);
+    ctx.fillStyle = "#aee3ff";
+    ctx.fillRect(mastX - 16, jibY + 11, 24, 14);
+
+    // chain / wire to ball
+    if (ball) {
+      ctx.strokeStyle = "#1a1a1a";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(trolleyX, jibY);
+      ctx.lineTo(ball.position.x, ball.position.y);
+      ctx.stroke();
+      // hook link
+      ctx.fillStyle = "#555";
+      ctx.beginPath(); ctx.arc(trolleyX, jibY, 5, 0, 7); ctx.fill();
+    }
+  }
+
+  function drawBall() {
+    if (!ball) return;
+    const { x, y } = ball.position;
+    // shadow
+    ctx.fillStyle = "rgba(0,0,0,0.18)";
+    ctx.beginPath();
+    ctx.ellipse(x, GROUND_Y + 2, BALL_R * 1.1, 10, 0, 0, 7); ctx.fill();
+    // sphere
+    const grad = ctx.createRadialGradient(x - 12, y - 14, 6, x, y, BALL_R);
+    grad.addColorStop(0, "#7a7f88");
+    grad.addColorStop(0.6, "#3a3f47");
+    grad.addColorStop(1, "#16191e");
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(x, y, BALL_R, 0, 7); ctx.fill();
+    // rivets
+    ctx.fillStyle = "rgba(255,255,255,.18)";
+    ctx.beginPath(); ctx.arc(x - 10, y - 12, 4, 0, 7); ctx.fill();
+  }
+
+  function drawBlocks() {
+    for (const b of blocks) {
+      const v = b.vertices;
+      ctx.beginPath();
+      ctx.moveTo(v[0].x, v[0].y);
+      for (let i = 1; i < v.length; i++) ctx.lineTo(v[i].x, v[i].y);
+      ctx.closePath();
+      ctx.fillStyle = b.plugin.color;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(0,0,0,0.28)";
+      ctx.stroke();
+      // top highlight
+      ctx.beginPath();
+      ctx.moveTo(v[0].x, v[0].y); ctx.lineTo(v[1].x, v[1].y);
+      ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  function drawDust() {
+    for (const p of dust) {
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * p.life, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---- Main loop ----
+  let running = false;
+  let last = performance.now();
+
+  function frame(now) {
+    const dt = Math.min(33, now - last);
+    last = now;
+
+    if (running) {
+      applyKeys();
+      Engine.update(engine, dt);
+      updateDust();
+      updateHUD();
+    }
+
+    // camera shake
+    let sx = 0, sy = 0;
+    if (shake > 0.4) {
+      sx = (Math.random() - 0.5) * shake;
+      sy = (Math.random() - 0.5) * shake;
+      shake *= 0.86;
+    } else shake = 0;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(sx, sy);
+    drawBackground();
+    drawBlocks();
+    drawCrane();
+    drawBall();
+    drawDust();
+    ctx.restore();
+
+    requestAnimationFrame(frame);
+  }
+
+  // ---- Buttons ----
+  el("btnReset").onclick = resetBall;
+  el("btnRebuild").onclick = () => { score = Math.max(0, score - 0); cleared = false; buildLevel(level); resetBall(); };
+  el("btnNext").onclick = () => { level++; cleared = false; buildLevel(level); resetBall(); showToast("LEVEL " + level, "#ffd24a"); };
+
+  el("btnStart").onclick = () => {
+    el("overlay").classList.add("hidden");
+    if (!running) { running = true; showToast("解体スタート！", "#ffd24a"); }
+  };
+
+  // ---- Init ----
+  spawnBall();
+  buildLevel(1);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
