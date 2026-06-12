@@ -76,12 +76,16 @@ import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 const statusEl = document.getElementById("status");
 const setStatus = (m, show=true) => { statusEl.textContent = m; statusEl.style.display = show?"block":"none"; };
 
+// surface any uncaught error on screen (mobile has no console)
+addEventListener("error", e => setStatus("⚠ JSエラー: " + (e.message || e.error)));
+addEventListener("unhandledrejection", e => setStatus("⚠ 失敗: " + ((e.reason && (e.reason.message||e.reason)) || "unknown")));
+
 let TilesRenderer, GLTFExtensionsPlugin;
 try {
   ({ TilesRenderer } = await import("3d-tiles-renderer/three"));
   ({ GLTFExtensionsPlugin } = await import("3d-tiles-renderer/three/plugins"));
 } catch (e) {
-  setStatus("3D Tilesライブラリの読み込みに失敗しました（ネットワーク/CDN）。後でお試しください。");
+  setStatus("⚠ 3D Tilesライブラリの読み込み失敗（CDN/esm.sh）: " + (e.message||e));
   console.error(e);
 }
 
@@ -105,10 +109,20 @@ addEventListener("resize", resize); resize();
 
 // ---- tileset loading ----
 let tiles = null, loadTimer = 0;
-function loadTileset(url){
-  if (!TilesRenderer){ setStatus("ライブラリ未読み込みのため表示できません。"); return; }
+async function loadTileset(url){
+  if (!TilesRenderer){ setStatus("⚠ ライブラリ未読み込みのため表示できません（上のエラー参照）。"); return; }
   if (tiles){ scene.remove(tiles.group); try{ tiles.dispose(); }catch(e){} tiles=null; }
-  setStatus("読み込み中…（初回はタイル取得に数秒〜）");
+  setStatus("tileset.json を取得中…");
+
+  // Probe the tileset URL first so CORS/404 problems show a clear message.
+  try {
+    const r = await fetch(url, { mode:"cors" });
+    if (!r.ok){ setStatus("⚠ tileset取得 HTTP " + r.status + "（URLを確認してください）。"); return; }
+    setStatus("tileset取得OK。タイルを描画中…（数秒）");
+  } catch (err) {
+    setStatus("⚠ 配信サーバーへアクセスできません＝CORSブロックの可能性大（github.io から取得不可）。コードでは解消できないため、別エリアURL/別配信元か、LOD1同梱方式に切り替えが必要です。");
+    console.error(err); return;
+  }
 
   tiles = new TilesRenderer(url);
   const draco = new DRACOLoader(); draco.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/");
