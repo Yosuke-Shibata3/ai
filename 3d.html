@@ -235,27 +235,46 @@ function operatorCab(parent,x,y,z,s){
   box(parent,x,y+s*0.05,z+s*0.46, s*0.7,s*0.5,0.06, glassMat);
 }
 
-function buildMobile(){
-  PIVOT_H=7; BOOM_LEN=18; crane.luff=0.72;
-  // carrier + wheels + outriggers (do NOT slew)
-  box(craneGroup, 0,1.0,0, 8,1.6,3.2, darkMat);
-  box(craneGroup, 1.6,2.0,0, 3.4,1.2,3.0, yellow2);
-  for(const x of [-3,-1.2,2.6]){ wheel(craneGroup,x,1.7,0.9); wheel(craneGroup,x,-1.7,0.9); }
-  for(const [sx,sz] of [[3.6,1.7],[3.6,-1.7],[-3.4,1.7],[-3.4,-1.7]]){
-    craneGroup.add(tube(sx*0.6,1.0,sz*0.5, sx,0.2,sz,0.12,steelMat));
-    box(craneGroup, sx,0.15,sz, 0.9,0.3,0.9, darkMat); }
-  // slewing superstructure
-  box(slewGroup, -0.4,3.0,0, 4.2,1.5,3.2, yellow);
-  operatorCab(slewGroup, 1.4,3.9,1.0, 1.7);
-  box(slewGroup, -2.4,3.2,0, 2.0,1.7,3.0, cwMat);             // counterweight
-  boomPivot=new THREE.Group(); boomPivot.position.set(0.6,3.6,0); slewGroup.add(boomPivot);
-  // telescopic boom: 3 tapering segments
-  box(boomPivot, BOOM_LEN*0.20,0,0, BOOM_LEN*0.42,1.15,1.15, yellow);
-  box(boomPivot, BOOM_LEN*0.52,0,0, BOOM_LEN*0.40,0.95,0.95, yellow2);
-  box(boomPivot, BOOM_LEN*0.82,0,0, BOOM_LEN*0.38,0.78,0.78, yellow);
-  boomPivot.add(tube(-1.2,-0.2,0, BOOM_LEN*0.34,0,0, 0.16, steelMat)); // luffing ram
+// shared telescopic boom (segments + luffing ram) along +X
+function telescopicBoom(pivotY, widths){
+  boomPivot=new THREE.Group(); boomPivot.position.set(widths.px, pivotY, 0); slewGroup.add(boomPivot);
+  const segs=widths.segs;
+  for(let i=0;i<segs.length;i++){ const s=segs[i];
+    box(boomPivot, BOOM_LEN*s.c,0,0, BOOM_LEN*s.l, s.w, s.w, i%2?yellow2:yellow); }
+  boomPivot.add(tube(-1.1,-0.2,0, BOOM_LEN*0.32,0,0, 0.15, steelMat)); // luffing ram
   tipMarker=new THREE.Object3D(); tipMarker.position.set(BOOM_LEN,0,0); boomPivot.add(tipMarker);
   tipMarker.add(hookBlock());
+}
+function outriggers(scale){
+  for(const [sx,sz] of [[1,1],[1,-1],[-1,-1],[-1,1]]){ const x=sx*scale.x, z=sz*scale.z;
+    craneGroup.add(tube(x*0.55,1.0,z*0.5, x,0.2,z, 0.13, steelMat));
+    box(craneGroup, x,0.15,z, scale.pad,0.3,scale.pad, darkMat); }
+}
+
+function buildRough(){            // ラフター（ラフテレーンクレーン）：小回り・4輪・単一運転室
+  PIVOT_H=3.4; BOOM_LEN=16; crane.luff=0.72; crane.cable=7;
+  box(craneGroup, 0,1.0,0, 6.6,1.5,3.0, darkMat);
+  for(const x of [-2.2,2.2]){ wheel(craneGroup,x,1.6,1.15); wheel(craneGroup,x,-1.6,1.15); }
+  outriggers({x:3.1,z:1.7,pad:1.0});
+  box(slewGroup, -0.3,2.7,0, 4.2,1.6,2.9, yellow);
+  operatorCab(slewGroup, 1.3,3.5,1.05, 1.9);                 // single cab on the slewing upper
+  box(slewGroup, -2.4,2.9,0, 1.8,1.5,2.7, cwMat);
+  telescopicBoom(3.3, { px:0.7, segs:[
+    {c:0.20,l:0.42,w:1.0},{c:0.52,l:0.40,w:0.84},{c:0.82,l:0.38,w:0.68} ]});
+}
+
+function buildAllTerrain(){       // オールテレーンクレーン：多軸キャリア＋長尺テレスコブーム
+  PIVOT_H=4.0; BOOM_LEN=22; crane.luff=0.70; crane.cable=8;
+  box(craneGroup, 0,1.1,0, 11.5,1.6,2.9, darkMat);
+  box(craneGroup, 5.2,2.3,0, 1.8,1.5,2.5, yellow2);          // driver cab (fixed on carrier)
+  box(craneGroup, 6.0,2.4,0, 0.06,0.8,1.9, glassMat);
+  for(let i=0;i<5;i++){ const x=-4.4+i*2.05; wheel(craneGroup,x,1.55,0.9); wheel(craneGroup,x,-1.55,0.9); }
+  outriggers({x:3.9,z:1.8,pad:1.15});
+  box(slewGroup, -0.6,3.2,0, 5.0,1.8,2.9, yellow);
+  operatorCab(slewGroup, 1.9,3.8,1.05, 1.7);
+  box(slewGroup, -3.0,3.3,0, 2.4,2.0,2.9, cwMat);
+  telescopicBoom(3.9, { px:1.0, segs:[
+    {c:0.16,l:0.34,w:1.15},{c:0.42,l:0.30,w:0.98},{c:0.66,l:0.28,w:0.82},{c:0.87,l:0.26,w:0.68} ]});
 }
 
 function buildCrawler(){
@@ -277,29 +296,10 @@ function buildCrawler(){
   tipMarker.add(hookBlock());
 }
 
-function buildTower(){
-  PIVOT_H=22; BOOM_LEN=18; crane.luff=0.06; crane.cable=12;
-  // fixed lattice mast (does not slew)
-  const mast=latticeBoom(PIVOT_H,0.8,yellow); mast.rotation.z=Math.PI/2; craneGroup.add(mast);
-  box(craneGroup, 0,1.2,0, 3.2,2.4,3.2, darkMat);             // base block
-  // slewing top: jib + counter-jib
-  operatorCab(slewGroup, 0,PIVOT_H-1.2,1.2, 1.8);
-  const jib=latticeBoom(BOOM_LEN,0.55,yellow); jib.position.set(0,PIVOT_H,0); slewGroup.add(jib);
-  const cjib=latticeBoom(6,0.5,yellow); cjib.rotation.y=Math.PI; cjib.position.set(0,PIVOT_H,0); slewGroup.add(cjib);
-  box(slewGroup, -5.5,PIVOT_H,0, 2.2,1.6,2.6, cwMat);          // counterweight
-  // small apex tower + tie bars
-  box(slewGroup, 0,PIVOT_H+3,0, 0.5,6,0.5, steelMat);
-  slewGroup.add(tube(0,PIVOT_H+6,0, BOOM_LEN*0.6,PIVOT_H,0, 0.05, steelMat));
-  slewGroup.add(tube(0,PIVOT_H+6,0, -5.5,PIVOT_H,0, 0.05, steelMat));
-  boomPivot=new THREE.Group(); boomPivot.position.set(0,PIVOT_H,0); slewGroup.add(boomPivot);
-  tipMarker=new THREE.Object3D(); tipMarker.position.set(BOOM_LEN,0,0); boomPivot.add(tipMarker);
-  tipMarker.add(hookBlock());
-}
-
 const CRANES = [
-  { id:"mobile",  name:"移動式",     emoji:"🚛", build:buildMobile  },
-  { id:"crawler", name:"クローラー", emoji:"🚜", build:buildCrawler },
-  { id:"tower",   name:"タワー",     emoji:"🏗️", build:buildTower   },
+  { id:"crawler", name:"クローラー",     emoji:"🚜", build:buildCrawler   },
+  { id:"at",      name:"オールテレーン", emoji:"🚛", build:buildAllTerrain },
+  { id:"rt",      name:"ラフター",       emoji:"🚙", build:buildRough     },
 ];
 let craneIdx = 0;
 
