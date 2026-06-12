@@ -288,6 +288,34 @@
   const CX = 940;
   function pal(n){ const p = PALETTES[n % PALETTES.length]; return ()=>p[(Math.random()*p.length)|0]; }
 
+  // Turn any text into a destructible "sign": small blocks placed where the
+  // glyphs are. Blocks start frozen (static) so the sign floats and holds its
+  // shape until a hit shatters it (see collisionStart / explode).
+  function buildSignText(text, shades, centerY){
+    const FS = 150, S = 15, B = 15;       // font px, sample step, world block size
+    const fontStr = 'bold ' + FS + 'px "Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo","MS PGothic",sans-serif';
+    const off = document.createElement("canvas");
+    let o = off.getContext("2d");
+    o.font = fontStr;
+    const tw = Math.ceil(o.measureText(text).width);
+    off.width = tw + 24; off.height = FS + 48;
+    o = off.getContext("2d");             // resizing resets the context
+    o.font = fontStr; o.textBaseline = "top"; o.fillStyle = "#fff";
+    o.fillText(text, 12, 12);
+    const data = o.getImageData(0, 0, off.width, off.height).data;
+    const cols = Math.floor(off.width / S), rows = Math.floor(off.height / S);
+    const originX = CX - (cols * B) / 2, originY = (centerY || 360) - (rows * B) / 2;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const sx = (c * S + (S >> 1)) | 0, sy = (r * S + (S >> 1)) | 0;
+      if (data[(sy * off.width + sx) * 4 + 3] > 128) {
+        const blk = addBlock(originX + c * B + B / 2, originY + r * B + B / 2,
+          B - 1.5, B - 1.5, shades[(r + c) % shades.length],
+          { isStatic: true, friction: 0.7, restitution: 0.1 });
+        blk.plugin.isLogo = true;
+      }
+    }
+  }
+
   const BUILDINGS = [
     { id:"tower", name:"タワー", emoji:"🏢", build(){
         const pick = pal(0), bw=58, bh=30, cols=4, rows=13, ox=CX-(cols*bw)/2;
@@ -329,6 +357,9 @@
         for(const s of specs){ const pick=pal(s.p), bw=52,bh=30,cols=3,ox=s.x-(cols*bw)/2;
           for(let r=0;r<s.rows;r++) for(let c=0;c<cols;c++)
             addBlock(ox+c*bw+bw/2, GROUND_Y-r*bh-bh/2, bw-2, bh-2, pick()); }
+      }},
+    { id:"kawada", name:"川田工業ロゴ", emoji:"🏭", build(){
+        buildSignText("川田工業", ["#0b4ea2","#0d5cbf","#1668c9"], 360);
       }},
   ];
 
@@ -396,6 +427,7 @@
     for(const b of blocks){
       const dx=b.position.x-x, dy=b.position.y-y, d=Math.hypot(dx,dy)||1;
       if(d<R){ const s=(1-d/R)*20;
+        if(b.plugin.isLogo && b.isStatic) Body.setStatic(b,false);  // free frozen sign pieces
         Body.setVelocity(b,{ x:dx/d*s, y:dy/d*s-4 });
         Body.setAngularVelocity(b,(Math.random()-0.5)*0.6);
       }
@@ -403,6 +435,20 @@
     spawnDust(x,y,"#ffb347",46);
     spawnDust(x,y,"#ff5e3a",24);
     shake=24;
+  }
+
+  // Knock loose the frozen sign pieces around an impact point
+  function shatterSign(x,y,power){
+    const R=58+power*5;
+    for(const b of blocks){
+      if(!(b.plugin.isLogo && b.isStatic)) continue;
+      const dx=b.position.x-x, dy=b.position.y-y, d=Math.hypot(dx,dy)||1;
+      if(d<R){ Body.setStatic(b,false);
+        Body.setVelocity(b,{ x:dx/d*power*0.5, y:dy/d*power*0.5-2 });
+        Body.setAngularVelocity(b,(Math.random()-0.5)*0.5);
+      }
+    }
+    spawnDust(x,y,"#bcd6f2",12);
   }
 
   Events.on(engine, "collisionStart", function(ev){
@@ -414,9 +460,13 @@
       const speed = Vector.magnitude(payload.velocity);
       const cp = (pair.collision && pair.collision.supports[0]) || other.position;
       const def = payload.plugin.def;
+      const frozenSign = other.plugin && other.plugin.isLogo && other.isStatic;
       if(def.kind==="bomb" && speed>4.5){
         const now=performance.now();
         if(now - payload.plugin.lastBoom > 700){ payload.plugin.lastBoom=now; explode(cp.x,cp.y); }
+      } else if(frozenSign && speed>3){
+        shatterSign(cp.x,cp.y,speed);
+        shake=Math.min(16, speed);
       } else if(other.label==="block" && speed>6){
         spawnDust(cp.x,cp.y, other.plugin?other.plugin.color:"#ccc", Math.min(22, speed*1.6|0));
         shake=Math.min(18, speed);
