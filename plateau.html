@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>PLATEAU 3D Tiles ビューア（実験）</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0b1020;
+    font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    -webkit-user-select:none; user-select:none; touch-action:none; color:#eaf0ff; }
+  #c { display:block; width:100%; height:100%; }
+  .panel { position:absolute; background:rgba(10,16,32,.78); border:1px solid rgba(255,255,255,.14);
+    border-radius:12px; padding:10px 13px; backdrop-filter:blur(6px); }
+  #top { top:12px; left:12px; right:12px; max-width:620px; font-size:12.5px; line-height:1.55; }
+  #top h1 { font-size:15px; color:#7ec8ff; margin-bottom:3px; }
+  #top .note { opacity:.85; }
+  #top a { color:#7ec8ff; }
+  #bottom { bottom:12px; left:50%; transform:translateX(-50%); width:calc(100% - 24px); max-width:960px;
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center; }
+  #bottom input { flex:1 1 320px; min-width:220px; font-family:inherit; font-size:12px; color:#eaf0ff;
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18); border-radius:8px; padding:8px 10px; }
+  button { font-family:inherit; font-size:12.5px; font-weight:700; color:#05202b; background:#5ac8fa;
+    border:none; border-radius:8px; padding:8px 12px; cursor:pointer; white-space:nowrap; }
+  button.ghost { background:rgba(255,255,255,.12); color:#eaf0ff; border:1px solid rgba(255,255,255,.18); }
+  button:active { transform:translateY(1px); }
+  #status { position:absolute; bottom:64px; left:50%; transform:translateX(-50%); font-size:12.5px;
+    background:rgba(10,16,32,.8); border:1px solid rgba(255,255,255,.14); border-radius:8px; padding:6px 12px;
+    max-width:90%; text-align:center; }
+  .pill { display:inline-block; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18);
+    border-radius:6px; padding:4px 9px; cursor:pointer; font-size:12px; }
+</style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div id="top" class="panel">
+    <h1>🗼 PLATEAU 3D Tiles ビューア（実験）</h1>
+    <div class="note">
+      国土交通省 <b>Project PLATEAU</b> の3D都市モデル（3D Tiles・<a href="https://www.mlit.go.jp/plateau/" target="_blank" rel="noopener">CC BY 4.0</a>）を
+      ストリーミング表示します。🖱️ ドラッグで回転・ホイールでズーム。<br>
+      ※ ストリーミング建物は<b>閲覧用</b>で、現状ぶつけて壊すことはできません（破壊は
+      <a href="3d.html">3Dゲーム</a> 側で）。読み込めない場合はCORS制限の可能性 → 別URL/エリアをお試しください。
+      &nbsp;<a href="3d.html">▶ 3Dゲーム</a> / <a href="index.html">2D版</a>
+    </div>
+  </div>
+
+  <div id="status" class="panel" style="display:none"></div>
+
+  <div id="bottom" class="panel">
+    <span style="font-size:11px;opacity:.7">プリセット:</span>
+    <span class="pill" data-url="https://assets.cms.plateau.reearth.io/assets/0e/e5948a-e95c-4e31-be85-1f8c066ed996/13101_chiyoda-ku_pref_2023_citygml_1_op_bldg_3dtiles_13101_chiyoda-ku_lod1/tileset.json">東京・千代田区</span>
+    <span class="pill" data-url="https://assets.cms.plateau.reearth.io/assets/b8/314602-4b39-4d5f-be2d-a0b17a3e3c21/01100_sapporo-shi_city_2020_citygml_6_op_bldg_3dtiles_01101_chuo-ku_lod1/tileset.json">札幌・中央区</span>
+    <input id="url" type="text" spellcheck="false"
+      value="https://assets.cms.plateau.reearth.io/assets/0e/e5948a-e95c-4e31-be85-1f8c066ed996/13101_chiyoda-ku_pref_2023_citygml_1_op_bldg_3dtiles_13101_chiyoda-ku_lod1/tileset.json" />
+    <button id="load">読み込み</button>
+  </div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://esm.sh/three@0.160.0",
+    "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
+    "3d-tiles-renderer/three": "https://esm.sh/3d-tiles-renderer@0.4.9/three?external=three",
+    "3d-tiles-renderer/three/plugins": "https://esm.sh/3d-tiles-renderer@0.4.9/three/plugins?external=three"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+
+const statusEl = document.getElementById("status");
+const setStatus = (m, show=true) => { statusEl.textContent = m; statusEl.style.display = show?"block":"none"; };
+
+let TilesRenderer, GLTFExtensionsPlugin;
+try {
+  ({ TilesRenderer } = await import("3d-tiles-renderer/three"));
+  ({ GLTFExtensionsPlugin } = await import("3d-tiles-renderer/three/plugins"));
+} catch (e) {
+  setStatus("3D Tilesライブラリの読み込みに失敗しました（ネットワーク/CDN）。後でお試しください。");
+  console.error(e);
+}
+
+// ---- three.js scene ----
+const canvas = document.getElementById("c");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, logarithmicDepthBuffer:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("#9fc6ef");
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 1, 200000);
+camera.position.set(400, 300, 400);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.maxPolarAngle = Math.PI*0.495;
+scene.add(new THREE.HemisphereLight("#dff0ff", "#5b6e4a", 1.0));
+const sun = new THREE.DirectionalLight("#fff6e0", 1.4); sun.position.set(1,2,1); scene.add(sun);
+const grid = new THREE.GridHelper(4000, 80, 0x88aacc, 0x4a5b86);
+grid.material.opacity = .25; grid.material.transparent = true; scene.add(grid);
+
+function resize(){ renderer.setSize(innerWidth, innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
+addEventListener("resize", resize); resize();
+
+// ---- tileset loading ----
+let tiles = null, loadTimer = 0;
+function loadTileset(url){
+  if (!TilesRenderer){ setStatus("ライブラリ未読み込みのため表示できません。"); return; }
+  if (tiles){ scene.remove(tiles.group); try{ tiles.dispose(); }catch(e){} tiles=null; }
+  setStatus("読み込み中…（初回はタイル取得に数秒〜）");
+
+  tiles = new TilesRenderer(url);
+  const draco = new DRACOLoader(); draco.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/");
+  const plugin = new GLTFExtensionsPlugin({ dracoLoader: draco });
+  if (tiles.registerPlugin) tiles.registerPlugin(plugin); else tiles.plugins.push(plugin);
+  tiles.setCamera(camera);
+  tiles.setResolutionFromRenderer(camera, renderer);
+  scene.add(tiles.group);
+
+  let oriented = false;
+  tiles.addEventListener("load-tile-set", () => {
+    if (oriented) return;
+    const sphere = new THREE.Sphere();
+    if (tiles.getBoundingSphere(sphere)) {
+      oriented = true;
+      const c = sphere.center.clone();
+      const up = c.clone().normalize();                       // geocentric up
+      const q = new THREE.Quaternion().setFromUnitVectors(up, new THREE.Vector3(0,1,0));
+      tiles.group.quaternion.copy(q);
+      const rc = c.clone().applyQuaternion(q);
+      tiles.group.position.set(-rc.x, -rc.y, -rc.z);           // recenter to origin
+      const R = Math.max(60, sphere.radius);
+      camera.position.set(R*0.8, R*0.55, R*0.8);
+      controls.target.set(0, 0, 0); controls.update();
+      grid.scale.setScalar(Math.max(1, R/2000));
+      setStatus("表示中：ドラッグで回転・ホイールでズーム", true);
+      setTimeout(()=>setStatus("", false), 3500);
+    }
+  });
+  tiles.addEventListener("load-error", (e) => {
+    setStatus("読み込みエラー：CORS制限かURL不正の可能性があります（別エリアをお試しを）。");
+    console.error("tiles load-error", e);
+  });
+
+  // if nothing renders, hint about CORS
+  clearTimeout(loadTimer);
+  loadTimer = setTimeout(() => {
+    if (!oriented) setStatus("まだ表示されません。CORSでブロックされている可能性があります（別URL/エリアを試すか、後で再読み込み）。");
+  }, 9000);
+}
+
+// ---- UI ----
+const urlInput = document.getElementById("url");
+document.getElementById("load").onclick = () => loadTileset(urlInput.value.trim());
+document.querySelectorAll(".pill").forEach(p => p.onclick = () => { urlInput.value = p.dataset.url; loadTileset(p.dataset.url); });
+
+// ---- loop ----
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  if (tiles){ tiles.setResolutionFromRenderer(camera, renderer); camera.updateMatrixWorld(); tiles.update(); }
+  renderer.render(scene, camera);
+}
+animate();
+
+// auto-load default
+if (TilesRenderer) loadTileset(urlInput.value.trim());
+</script>
+</body>
+</html>
