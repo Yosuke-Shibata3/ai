@@ -36,6 +36,7 @@
   .chip:hover{ background:rgba(255,255,255,.18);} .chip:active{ transform:translateY(2px);}
   .chip.active{ background:#ffd24a; color:#0b1020; border-color:#ffd24a;}
   .chip.bld.active{ background:#57e08a; color:#06210f; border-color:#57e08a;}
+  .chip.crane.active{ background:#5ac8fa; color:#05202b; border-color:#5ac8fa;}
   .chip.act{ background:rgba(231,76,60,.25); border-color:rgba(231,76,60,.5);}
 
   #overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -77,6 +78,7 @@
   </div>
 
   <div id="controls">
+    <div class="bar" id="barCrane"><span class="tag">クレーン</span></div>
     <div class="bar" id="barAmmo"><span class="tag">ぶつけるもの</span></div>
     <div class="bar" id="barBld"><span class="tag">壊す建物</span>
       <span style="width:8px"></span>
@@ -171,32 +173,148 @@ const groundBody = new CANNON.Body({ mass:0, shape:new CANNON.Plane() });
 groundBody.quaternion.setFromEuler(-Math.PI/2,0,0); world.addBody(groundBody);
 
 // ============================================================
-//  CRANE (visual hierarchy) + kinematic hook + ball
+//  CRANE (selectable, detailed) + kinematic hook + ball
 // ============================================================
 const BASE = new THREE.Vector3(-16, 0, 0);
-const PIVOT_H = 11, BOOM_LEN = 18;
+let PIVOT_H = 7, BOOM_LEN = 18;
 const crane = { slew:0, luff:0.7, cable:7 };
-const CABLE_MIN=3, CABLE_MAX=14, LUFF_MIN=0.18, LUFF_MAX=1.25;
+const CABLE_MIN=3, CABLE_MAX=18, LUFF_MIN=0.05, LUFF_MAX=1.30;
 
-const yellow = new THREE.MeshStandardMaterial({ color:"#f1c40f", metalness:.1, roughness:.6 });
-const darkMat = new THREE.MeshStandardMaterial({ color:"#2c3e50", metalness:.3, roughness:.5 });
+const yellow  = new THREE.MeshStandardMaterial({ color:"#f1c40f", metalness:.2, roughness:.55 });
+const yellow2 = new THREE.MeshStandardMaterial({ color:"#e2b007", metalness:.25, roughness:.55 });
+const darkMat = new THREE.MeshStandardMaterial({ color:"#2c3e50", metalness:.35, roughness:.5 });
+const steelMat= new THREE.MeshStandardMaterial({ color:"#8d99a6", metalness:.6, roughness:.4 });
+const tireMat = new THREE.MeshStandardMaterial({ color:"#1a1f24", roughness:.85 });
+const glassMat= new THREE.MeshStandardMaterial({ color:"#9fe3ff", metalness:.1, roughness:.15, transparent:true, opacity:.85 });
+const cwMat   = new THREE.MeshStandardMaterial({ color:"#3a4654", metalness:.4, roughness:.5 });
 
-const craneGroup = new THREE.Group(); craneGroup.position.copy(BASE); scene.add(craneGroup);
-// carrier
-const carrier = new THREE.Mesh(new THREE.BoxGeometry(6,2.2,4), darkMat);
-carrier.position.y=1.1; carrier.castShadow=true; craneGroup.add(carrier);
-// cab + mast
-const cab = new THREE.Mesh(new THREE.BoxGeometry(3.4, PIVOT_H-2.2, 3.4),
-  new THREE.MeshStandardMaterial({ color:"#e67e22", roughness:.6 }));
-cab.position.y = 2.2 + (PIVOT_H-2.2)/2; cab.castShadow=true; craneGroup.add(cab);
-// boom pivot
-const boomPivot = new THREE.Group(); boomPivot.position.set(0, PIVOT_H, 0); craneGroup.add(boomPivot);
-const boom = new THREE.Mesh(new THREE.BoxGeometry(BOOM_LEN, 1.1, 1.1), yellow);
-boom.position.x = BOOM_LEN/2; boom.castShadow=true; boomPivot.add(boom);
-const tipMarker = new THREE.Object3D(); tipMarker.position.set(BOOM_LEN, 0, 0); boomPivot.add(tipMarker);
-// counterweight
-const cw = new THREE.Mesh(new THREE.BoxGeometry(2.4,2.4,3), darkMat);
-cw.position.set(-2.2,0,0); boomPivot.add(cw);
+// --- small builders for fine detail -------------------------
+const _UP = new THREE.Vector3(0,1,0);
+function bar(p1,p2,r,mat){
+  const dir=new THREE.Vector3().subVectors(p2,p1); const len=dir.length()||0.001;
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,6), mat);
+  m.position.copy(p1).addScaledVector(dir,0.5);
+  m.quaternion.setFromUnitVectors(_UP, dir.clone().normalize()); m.castShadow=true; return m;
+}
+const tube=(x1,y1,z1,x2,y2,z2,r,mat)=>bar(new THREE.Vector3(x1,y1,z1),new THREE.Vector3(x2,y2,z2),r,mat);
+function box(parent,x,y,z,sx,sy,sz,mat){ const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mat);
+  m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; parent.add(m); return m; }
+function wheel(parent,x,z,r){ const w=new THREE.Mesh(new THREE.CylinderGeometry(r,r,0.7,18),tireMat);
+  w.rotation.x=Math.PI/2; w.position.set(x,r,z); w.castShadow=true; parent.add(w);
+  const hubM=new THREE.Mesh(new THREE.CylinderGeometry(r*0.4,r*0.4,0.74,10),steelMat);
+  hubM.rotation.x=Math.PI/2; hubM.position.set(x,r,z); parent.add(hubM); }
+// lattice truss along +X of length L, half-width hw
+function latticeBoom(L, hw, mat){
+  const g=new THREE.Group();
+  const cs=[[hw,hw],[hw,-hw],[-hw,hw],[-hw,-hw]];
+  for(const [y,z] of cs) g.add(tube(0,y,z,L,y,z,0.085,mat));      // chords
+  const n=Math.max(3, Math.round(L/2.0));
+  for(let i=0;i<n;i++){ const xa=i*L/n, xb=(i+1)*L/n, A=(i%2)?hw:-hw, B=(i%2)?-hw:hw;
+    g.add(tube(xa, hw,A, xb, hw,B, 0.05, mat));   // top
+    g.add(tube(xa,-hw,A, xb,-hw,B, 0.05, mat));   // bottom
+    g.add(tube(xa,A, hw, xb,B, hw, 0.05, mat));   // near
+    g.add(tube(xa,A,-hw, xb,B,-hw, 0.05, mat));   // far
+    g.add(tube(xa,hw,hw, xa,-hw,hw,0.045,mat));   // verticals
+    g.add(tube(xa,hw,-hw,xa,-hw,-hw,0.045,mat));
+  }
+  return g;
+}
+// hook block hung under the tip
+function hookBlock(){ const g=new THREE.Group();
+  box(g,0,0,0,0.8,0.6,0.8,steelMat);
+  const sheave=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.5,12),darkMat);
+  sheave.rotation.x=Math.PI/2; g.add(sheave);
+  const hk=new THREE.Mesh(new THREE.TorusGeometry(0.22,0.07,8,16),steelMat);
+  hk.position.y=-0.55; g.add(hk); return g; }
+
+// --- crane state (rebuilt on selection) ---------------------
+let craneGroup, slewGroup, boomPivot, tipMarker;
+
+function operatorCab(parent,x,y,z,s){
+  box(parent,x,y,z, s,s*0.9,s*0.9, darkMat);
+  box(parent,x,y+s*0.05,z+s*0.46, s*0.7,s*0.5,0.06, glassMat);
+}
+
+function buildMobile(){
+  PIVOT_H=7; BOOM_LEN=18; crane.luff=0.72;
+  // carrier + wheels + outriggers (do NOT slew)
+  box(craneGroup, 0,1.0,0, 8,1.6,3.2, darkMat);
+  box(craneGroup, 1.6,2.0,0, 3.4,1.2,3.0, yellow2);
+  for(const x of [-3,-1.2,2.6]){ wheel(craneGroup,x,1.7,0.9); wheel(craneGroup,x,-1.7,0.9); }
+  for(const [sx,sz] of [[3.6,1.7],[3.6,-1.7],[-3.4,1.7],[-3.4,-1.7]]){
+    craneGroup.add(tube(sx*0.6,1.0,sz*0.5, sx,0.2,sz,0.12,steelMat));
+    box(craneGroup, sx,0.15,sz, 0.9,0.3,0.9, darkMat); }
+  // slewing superstructure
+  box(slewGroup, -0.4,3.0,0, 4.2,1.5,3.2, yellow);
+  operatorCab(slewGroup, 1.4,3.9,1.0, 1.7);
+  box(slewGroup, -2.4,3.2,0, 2.0,1.7,3.0, cwMat);             // counterweight
+  boomPivot=new THREE.Group(); boomPivot.position.set(0.6,3.6,0); slewGroup.add(boomPivot);
+  // telescopic boom: 3 tapering segments
+  box(boomPivot, BOOM_LEN*0.20,0,0, BOOM_LEN*0.42,1.15,1.15, yellow);
+  box(boomPivot, BOOM_LEN*0.52,0,0, BOOM_LEN*0.40,0.95,0.95, yellow2);
+  box(boomPivot, BOOM_LEN*0.82,0,0, BOOM_LEN*0.38,0.78,0.78, yellow);
+  boomPivot.add(tube(-1.2,-0.2,0, BOOM_LEN*0.34,0,0, 0.16, steelMat)); // luffing ram
+  tipMarker=new THREE.Object3D(); tipMarker.position.set(BOOM_LEN,0,0); boomPivot.add(tipMarker);
+  tipMarker.add(hookBlock());
+}
+
+function buildCrawler(){
+  PIVOT_H=6; BOOM_LEN=24; crane.luff=0.66;
+  // crawler tracks (don't slew)
+  for(const z of [-2.0,2.0]){ box(craneGroup, 0,0.7,z, 9,1.4,1.6, darkMat);
+    for(let i=-3;i<=3;i++) wheel(craneGroup, i*1.2, z, 0.55); }
+  box(craneGroup, 0,1.7,0, 5,0.5,4.4, steelMat);
+  // slewing house
+  box(slewGroup, -0.4,3.0,0, 5.2,2.0,4.0, yellow);
+  operatorCab(slewGroup, 1.9,3.4,1.4, 1.8);
+  box(slewGroup, -2.8,3.0,0, 2.2,2.2,4.0, cwMat);
+  box(slewGroup, -3.0,5.4,0, 0.4,3.0,0.4, steelMat);          // A-frame mast
+  boomPivot=new THREE.Group(); boomPivot.position.set(1.2,3.4,0); slewGroup.add(boomPivot);
+  const lat=latticeBoom(BOOM_LEN,0.55,yellow); boomPivot.add(lat);
+  // pendant lines from A-frame to boom tip (visual)
+  boomPivot.add(tube(0,0,0, BOOM_LEN,0,0.5, 0.03, darkMat));
+  tipMarker=new THREE.Object3D(); tipMarker.position.set(BOOM_LEN,0,0); boomPivot.add(tipMarker);
+  tipMarker.add(hookBlock());
+}
+
+function buildTower(){
+  PIVOT_H=22; BOOM_LEN=18; crane.luff=0.06; crane.cable=12;
+  // fixed lattice mast (does not slew)
+  const mast=latticeBoom(PIVOT_H,0.8,yellow); mast.rotation.z=Math.PI/2; craneGroup.add(mast);
+  box(craneGroup, 0,1.2,0, 3.2,2.4,3.2, darkMat);             // base block
+  // slewing top: jib + counter-jib
+  operatorCab(slewGroup, 0,PIVOT_H-1.2,1.2, 1.8);
+  const jib=latticeBoom(BOOM_LEN,0.55,yellow); jib.position.set(0,PIVOT_H,0); slewGroup.add(jib);
+  const cjib=latticeBoom(6,0.5,yellow); cjib.rotation.y=Math.PI; cjib.position.set(0,PIVOT_H,0); slewGroup.add(cjib);
+  box(slewGroup, -5.5,PIVOT_H,0, 2.2,1.6,2.6, cwMat);          // counterweight
+  // small apex tower + tie bars
+  box(slewGroup, 0,PIVOT_H+3,0, 0.5,6,0.5, steelMat);
+  slewGroup.add(tube(0,PIVOT_H+6,0, BOOM_LEN*0.6,PIVOT_H,0, 0.05, steelMat));
+  slewGroup.add(tube(0,PIVOT_H+6,0, -5.5,PIVOT_H,0, 0.05, steelMat));
+  boomPivot=new THREE.Group(); boomPivot.position.set(0,PIVOT_H,0); slewGroup.add(boomPivot);
+  tipMarker=new THREE.Object3D(); tipMarker.position.set(BOOM_LEN,0,0); boomPivot.add(tipMarker);
+  tipMarker.add(hookBlock());
+}
+
+const CRANES = [
+  { id:"mobile",  name:"移動式",     emoji:"🚛", build:buildMobile  },
+  { id:"crawler", name:"クローラー", emoji:"🚜", build:buildCrawler },
+  { id:"tower",   name:"タワー",     emoji:"🏗️", build:buildTower   },
+];
+let craneIdx = 0;
+
+function buildCrane(i){
+  craneIdx = i;
+  if (craneGroup) scene.remove(craneGroup);
+  craneGroup = new THREE.Group(); craneGroup.position.copy(BASE); scene.add(craneGroup);
+  slewGroup  = new THREE.Group(); craneGroup.add(slewGroup);
+  crane.slew = 0;
+  CRANES[i].build();
+  slewGroup.rotation.y = crane.slew; boomPivot.rotation.z = crane.luff;
+  const tip = tipWorld(); hook.position.set(tip.x, tip.y, tip.z);
+  if (ball) recall();
+  syncCrane();
+}
 
 // cable line
 const cableGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
@@ -314,8 +432,23 @@ const BUILDINGS = [
         for(let r=0;r<s.rows;r++) for(let cx=0;cx<cols;cx++) for(let cz=0;cz<cols;cz++)
           addBox(BX+(cx-0.5)*bw, bh/2+r*bh, s.z+(cz-0.5)*bd, bw-0.08,bh-0.04,bd-0.08, pick(s.p), 1.4); }
     }},
+  { id:"bridge", name:"橋", emoji:"🌉", build(){ buildBridge(); }},
   { id:"kawada", name:"川田工業ロゴ", emoji:"🏭", build(){ buildSign("川田工業"); }},
 ];
+
+// A girder bridge: piers carry deck spans, with railings and two pylons.
+function buildBridge(){
+  const top=6.0, pierZ=[-13,-6.5,0,6.5,13];
+  for(const pz of pierZ) for(let r=0;r<5;r++)            // piers up to deck height
+    addBox(BX, 0.6+r*1.2, pz, 2.6, 1.2, 2.6, "#7a8a99", 3.2);
+  const deckW=7, segC=[-9.75,-3.25,3.25,9.75];
+  for(const z of segC) addBox(BX, top+0.4, z, deckW, 0.8, 6.7, "#9aa6b2", 2.6);   // deck spans
+  for(const z of segC){                                  // railings
+    addBox(BX+deckW/2-0.3, top+1.3, z, 0.3, 1.2, 6.6, "#c0392b", 0.7);
+    addBox(BX-deckW/2+0.3, top+1.3, z, 0.3, 1.2, 6.6, "#c0392b", 0.7); }
+  for(const z of [-6.5,6.5]) for(let r=0;r<5;r++)         // two pylons
+    addBox(BX, top+1.2+r*1.2, z, 1.5, 1.2, 1.5, "#cfd6dd", 1.4);
+}
 
 // Build a destructible sign from text: thin boxes in the Z-Y plane, frozen
 // (static) until hit so the sign holds its shape, then shatters.
@@ -423,7 +556,7 @@ function applyKeys(){
   if(keys["s"]) crane.luff = Math.max(LUFF_MIN, crane.luff-0.012);
   if(keys["arrowup"])   crane.cable = Math.max(CABLE_MIN, crane.cable-0.12);
   if(keys["arrowdown"]) crane.cable = Math.min(CABLE_MAX, crane.cable+0.12);
-  craneGroup.rotation.y = crane.slew;
+  slewGroup.rotation.y = crane.slew;
   boomPivot.rotation.z = crane.luff;
   if(cableConstraint) cableConstraint.distance = crane.cable;
 }
@@ -434,13 +567,16 @@ function applyKeys(){
 const el=id=>document.getElementById(id);
 function toast(t,color){ const e=el("toast"); e.textContent=t; e.style.color=color||"#fff";
   e.classList.remove("show"); void e.offsetWidth; e.classList.add("show"); }
-const barAmmo=el("barAmmo"), barBld=el("barBld");
+const barAmmo=el("barAmmo"), barBld=el("barBld"), barCrane=el("barCrane");
+CRANES.forEach((d,i)=>{ const b=document.createElement("button"); b.className="chip crane"; b.dataset.i=i;
+  b.textContent=d.emoji+" "+d.name; b.onclick=()=>buildCrane(i); barCrane.appendChild(b); });
 PAYLOADS.forEach((d,i)=>{ const b=document.createElement("button"); b.className="chip ammo"; b.dataset.i=i;
   b.innerHTML=d.emoji+" "+d.name+" <small style='opacity:.6'>"+(i+1)+"</small>"; b.onclick=()=>setAmmo(i); barAmmo.appendChild(b); });
 BUILDINGS.forEach((d,i)=>{ const b=document.createElement("button"); b.className="chip bld"; b.dataset.i=i;
   b.textContent=d.emoji+" "+d.name; b.onclick=()=>buildBuilding(i); barBld.insertBefore(b, el("btnSwing")); });
 function syncAmmo(){ barAmmo.querySelectorAll(".ammo").forEach(b=>b.classList.toggle("active",+b.dataset.i===ammoIdx)); }
 function syncBld(){ barBld.querySelectorAll(".bld").forEach(b=>b.classList.toggle("active",+b.dataset.i===bldIdx)); }
+function syncCrane(){ barCrane.querySelectorAll(".crane").forEach(b=>b.classList.toggle("active",+b.dataset.i===craneIdx)); }
 el("btnSwing").onclick=swing; el("btnReset").onclick=recall; el("btnRebuild").onclick=()=>buildBuilding(bldIdx);
 let running=false;
 el("btnStart").onclick=()=>{ el("overlay").classList.add("hidden"); if(!running){ running=true; toast("解体スタート！","#ffd24a"); } };
@@ -472,6 +608,7 @@ function animate(now){
 }
 
 // ---- init ----
+buildCrane(0);     // build crane first (defines tipMarker used by the ball)
 setAmmo(0);
 buildBuilding(0);
 // place ball under hook on first frame
