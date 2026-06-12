@@ -27,7 +27,7 @@
 
   /* HUD */
   #hud {
-    position: absolute; top: 16px; left: 16px; right: 16px;
+    position: absolute; top: 14px; left: 14px; right: 14px;
     display: flex; justify-content: space-between; align-items: flex-start;
     pointer-events: none; gap: 12px; flex-wrap: wrap;
   }
@@ -35,35 +35,46 @@
     background: rgba(10,16,32,.72);
     border: 1px solid rgba(255,255,255,.12);
     border-radius: 12px;
-    padding: 10px 14px;
+    padding: 9px 13px;
     backdrop-filter: blur(6px);
     color: #eaf0ff;
   }
-  .stats { display: flex; gap: 22px; }
-  .stat .label { font-size: 11px; letter-spacing: .12em; opacity: .65; text-transform: uppercase; }
-  .stat .value { font-size: 24px; font-weight: 800; line-height: 1.1; }
+  .stats { display: flex; gap: 20px; }
+  .stat .label { font-size: 10.5px; letter-spacing: .1em; opacity: .65; text-transform: uppercase; }
+  .stat .value { font-size: 22px; font-weight: 800; line-height: 1.1; }
   .stat .value.gold { color: #ffd24a; }
   .stat .value.green { color: #57e08a; }
-  .hint { font-size: 12.5px; line-height: 1.6; opacity: .9; max-width: 240px; }
+  .hint { font-size: 12px; line-height: 1.55; opacity: .9; max-width: 250px; }
   .hint b { color: #ffd24a; }
 
-  /* Buttons */
+  /* Bottom selector bars */
   #controls {
-    position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; gap: 8px; align-items: center;
+    width: calc(100% - 24px); max-width: 1180px;
   }
-  button {
-    pointer-events: auto;
-    font-family: inherit; font-size: 14px; font-weight: 700;
-    color: #0b1020; background: #ffd24a;
-    border: none; border-radius: 10px;
-    padding: 11px 18px; cursor: pointer;
-    box-shadow: 0 6px 18px rgba(0,0,0,.35);
-    transition: transform .08s ease, filter .15s ease;
+  .bar {
+    display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center;
+    background: rgba(10,16,32,.72); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px; padding: 7px 10px; backdrop-filter: blur(6px);
+    pointer-events: auto; max-width: 100%;
   }
-  button.ghost { background: rgba(255,255,255,.14); color: #eaf0ff; }
-  button:hover { filter: brightness(1.08); }
-  button:active { transform: translateY(2px); }
+  .bar .tag {
+    font-size: 10.5px; letter-spacing: .08em; opacity: .7; text-transform: uppercase;
+    margin-right: 4px; color:#cfe;
+  }
+  .chip {
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    color: #eaf0ff; background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.14); border-radius: 9px;
+    padding: 8px 11px; cursor: pointer; white-space: nowrap;
+    transition: transform .08s ease, background .15s ease, border-color .15s;
+  }
+  .chip:hover { background: rgba(255,255,255,.18); }
+  .chip:active { transform: translateY(2px); }
+  .chip.active { background: #ffd24a; color: #0b1020; border-color: #ffd24a; }
+  .chip.bld.active { background: #57e08a; color: #06210f; border-color:#57e08a; }
+  .chip.act { background: rgba(231,76,60,.25); border-color: rgba(231,76,60,.5); }
 
   /* Overlay */
   #overlay {
@@ -74,33 +85,33 @@
   }
   #overlay.hidden { display: none; }
   .card {
-    background: rgba(12,18,38,.9);
+    background: rgba(12,18,38,.92);
     border: 1px solid rgba(255,255,255,.14);
-    border-radius: 20px; padding: 34px 40px; max-width: 520px;
+    border-radius: 20px; padding: 30px 36px; max-width: 540px;
     box-shadow: 0 30px 80px rgba(0,0,0,.6);
   }
-  .card h1 { font-size: 34px; margin-bottom: 6px; color: #ffd24a; letter-spacing: .02em; }
-  .card .sub { opacity: .8; margin-bottom: 22px; font-size: 15px; color:#cfe; }
-  .keys { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; text-align: left;
-          margin: 0 auto 26px; max-width: 380px; font-size: 14px; color:#dde7ff; }
+  .card h1 { font-size: 32px; margin-bottom: 6px; color: #ffd24a; }
+  .card .sub { opacity: .85; margin-bottom: 20px; font-size: 15px; color:#cfe; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 9px 16px; text-align: left;
+          margin: 0 auto 24px; max-width: 410px; font-size: 13.5px; color:#dde7ff; }
   kbd {
-    display: inline-block; min-width: 26px; text-align: center;
+    display: inline-block; min-width: 24px; text-align: center;
     background: #2a3656; border: 1px solid #4a5b86; border-bottom-width: 3px;
-    border-radius: 6px; padding: 3px 8px; font-weight: 700; font-size: 13px; color:#fff;
+    border-radius: 6px; padding: 3px 7px; font-weight: 700; font-size: 12.5px; color:#fff;
   }
-  .big {
-    font-size: 18px; padding: 14px 30px; background: #57e08a; color:#06210f;
-  }
+  .big { font-size: 18px; padding: 14px 30px; background: #57e08a; color:#06210f;
+    border:none; border-radius:10px; font-weight:800; cursor:pointer; font-family:inherit; }
+  .big:active { transform: translateY(2px); }
   #toast {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.6);
-    font-size: 52px; font-weight: 900; color: #fff;
+    position: absolute; top: 46%; left: 50%; transform: translate(-50%,-50%) scale(.6);
+    font-size: 50px; font-weight: 900; color: #fff;
     text-shadow: 0 4px 24px rgba(0,0,0,.6); opacity: 0; pointer-events: none;
-    z-index: 8; letter-spacing: .02em;
+    z-index: 8; text-align:center; width: 90%;
   }
-  #toast.show { animation: pop 1.4s ease forwards; }
+  #toast.show { animation: pop 1.5s ease forwards; }
   @keyframes pop {
     0% { opacity: 0; transform: translate(-50%,-50%) scale(.6); }
-    18% { opacity: 1; transform: translate(-50%,-58%) scale(1.05); }
+    16% { opacity: 1; transform: translate(-50%,-58%) scale(1.05); }
     78% { opacity: 1; transform: translate(-50%,-58%) scale(1); }
     100% { opacity: 0; transform: translate(-50%,-70%) scale(1); }
   }
@@ -113,18 +124,21 @@
     <div class="panel stats">
       <div class="stat"><div class="label">SCORE</div><div class="value gold" id="score">0</div></div>
       <div class="stat"><div class="label">解体率</div><div class="value green" id="pct">0%</div></div>
-      <div class="stat"><div class="label">LEVEL</div><div class="value" id="level">1</div></div>
+      <div class="stat"><div class="label">CLEAR</div><div class="value" id="cleared">0</div></div>
     </div>
     <div class="panel hint">
-      🖱️ <b>鉄球をドラッグ</b>して引っぱり、離して建物にぶつける<br>
-      ⌨️ <b>A / D</b> クレーン移動 · <b>W / S</b> ワイヤー伸縮 · <b>Space</b> 鉄球リセット
+      🖱️ <b>武器をドラッグ</b>して引っぱり離す<br>
+      <b>A/D</b> 本体移動 · <b>W/S</b> ブーム上下 · <b>↑/↓</b> ワイヤー · <b>Space</b> 巻き戻し · <b>1-6</b> 武器切替
     </div>
   </div>
 
   <div id="controls">
-    <button id="btnReset" class="ghost">鉄球リセット (Space)</button>
-    <button id="btnNext" class="ghost">次の建物 ⟳</button>
-    <button id="btnRebuild" class="ghost">この建物を再建</button>
+    <div class="bar" id="barAmmo"><span class="tag">ぶつけるもの</span></div>
+    <div class="bar" id="barBld"><span class="tag">壊す建物</span>
+      <span style="width:8px"></span>
+      <button class="chip act" id="btnRebuild">🔄 再建</button>
+      <button class="chip act" id="btnReset">⟲ 巻き戻し</button>
+    </div>
   </div>
 
   <div id="toast"></div>
@@ -132,12 +146,14 @@
   <div id="overlay">
     <div class="card">
       <h1>🏗️ クレーン解体</h1>
-      <div class="sub">鉄球を振り回して建物をぶっ壊せ！</div>
+      <div class="sub">ブームを操り、好きな武器で好きな建物をぶっ壊せ！</div>
       <div class="keys">
-        <span><kbd>🖱️ Drag</kbd></span><span>鉄球をつかんで引っぱる → 離してスイング</span>
-        <span><kbd>A</kbd> <kbd>D</kbd></span><span>クレーン（トロリー）を左右に移動</span>
-        <span><kbd>W</kbd> <kbd>S</kbd></span><span>ワイヤーを伸ばす / 縮める</span>
-        <span><kbd>Space</kbd></span><span>鉄球を真上に戻す</span>
+        <span><kbd>🖱️ Drag</kbd></span><span>フックの武器をつかんで引っぱる → 離してスイング</span>
+        <span><kbd>A</kbd> <kbd>D</kbd></span><span>クレーン本体を左右に移動</span>
+        <span><kbd>W</kbd> <kbd>S</kbd></span><span>ブーム（アーム）を上げ下げ</span>
+        <span><kbd>↑</kbd> <kbd>↓</kbd></span><span>ワイヤーを巻き上げ / 繰り出し</span>
+        <span><kbd>1</kbd>…<kbd>6</kbd></span><span>ぶつけるもの（武器）を切り替え</span>
+        <span><kbd>Space</kbd></span><span>武器をフックまで巻き戻す</span>
       </div>
       <button class="big" id="btnStart">解体スタート 🔨</button>
     </div>
@@ -149,438 +165,464 @@
   "use strict";
 
   const {
-    Engine, World, Bodies, Body, Composite, Constraint,
-    MouseConstraint, Mouse, Events, Vector, Common
+    Engine, Bodies, Body, Composite, Constraint,
+    MouseConstraint, Mouse, Events, Vector
   } = Matter;
 
-  // ---- Virtual resolution (canvas scales via CSS) ----
+  // ---- Virtual resolution ----
   const W = 1280, H = 720;
-  const GROUND_Y = 660;          // top of ground
+  const GROUND_Y = 660;
   const canvas = document.getElementById("c");
   const ctx = canvas.getContext("2d");
 
-  // ---- Engine ----
   const engine = Engine.create();
   engine.gravity.y = 1.15;
   const world = engine.world;
 
-  // Collision categories
-  const CAT_BALL  = 0x0002;
-  const CAT_BLOCK = 0x0001;
+  const CAT_BALL = 0x0002, CAT_BLOCK = 0x0001;
 
-  // ---- World static geometry ----
   const ground = Bodies.rectangle(W / 2, GROUND_Y + 60, W * 2, 120, {
     isStatic: true, friction: 1, label: "ground"
   });
   Composite.add(world, ground);
 
-  // ---- Crane state ----
+  // ============================================================
+  //  CRANE — movable base + luffing boom + reel-in/out wire
+  // ============================================================
   const crane = {
-    mastX: 150,
-    jibY: 70,
-    jibEnd: 1180,
-    trolleyX: 760,
-    chainLen: 300,
+    baseX: 300,
+    boomLen: 470,
+    boomAngle: 0.8,   // radians from horizontal
+    cableLen: 290,
   };
-  const TROLLEY_MIN = crane.mastX + 90;
-  const TROLLEY_MAX = crane.jibEnd - 30;
-  const CHAIN_MIN = 140, CHAIN_MAX = 460;
-
-  // ---- Wrecking ball + chain constraint ----
-  const BALL_R = 36;
-  let ball = null;
-  let chain = null;
-
-  function spawnBall() {
-    if (ball) { Composite.remove(world, ball); Composite.remove(world, chain); }
-    ball = Bodies.circle(crane.trolleyX, crane.jibY + crane.chainLen, BALL_R, {
-      density: 0.05,            // heavy
-      friction: 0.4,
-      frictionAir: 0.004,
-      restitution: 0.18,
-      label: "ball",
-      collisionFilter: { category: CAT_BALL }
-    });
-    chain = Constraint.create({
-      pointA: { x: crane.trolleyX, y: crane.jibY },
-      bodyB: ball,
-      length: crane.chainLen,
-      stiffness: 1,
-      damping: 0.02,
-    });
-    Composite.add(world, [ball, chain]);
+  const BASE_MIN = 120, BASE_MAX = W - 120;
+  const ANG_MIN = 0.30, ANG_MAX = 1.30;
+  const CABLE_MIN = 110, CABLE_MAX = 430;
+  const pivotY = () => GROUND_Y - 96;            // boom pivot height (top of cab)
+  function boomTip() {
+    return {
+      x: crane.baseX + Math.cos(crane.boomAngle) * crane.boomLen,
+      y: pivotY() - Math.sin(crane.boomAngle) * crane.boomLen
+    };
   }
 
-  // ---- Buildings ----
-  let blocks = [];
-  let level = 1;
-  let score = 0;
-  let totalBlocks = 0;
+  // ============================================================
+  //  PAYLOADS (weapons)
+  // ============================================================
+  const PAYLOADS = [
+    { id:"ball",  name:"鉄球",      emoji:"🔩", kind:"sphere", r:36, density:0.052, rest:0.18, fric:0.4,  colA:"#7a7f88", colB:"#16191e" },
+    { id:"mega",  name:"巨大鉄球",  emoji:"⚫", kind:"sphere", r:54, density:0.060, rest:0.16, fric:0.4,  colA:"#8a909a", colB:"#101317" },
+    { id:"bomb",  name:"爆弾",      emoji:"💣", kind:"bomb",   r:32, density:0.040, rest:0.25, fric:0.4,  colA:"#454b55", colB:"#0a0c10" },
+    { id:"safe",  name:"金庫",      emoji:"🏦", kind:"box",    w:74, h:74, density:0.060, rest:0.05, fric:0.7, colA:"#6b7785", colB:"#39424d" },
+    { id:"spike", name:"トゲ鉄球",  emoji:"🦔", kind:"spiked", r:40, density:0.058, rest:0.12, fric:0.5,  colA:"#9aa0aa", colB:"#1b1e24" },
+    { id:"beach", name:"ビーチボール", emoji:"🏖️", kind:"beach", r:42, density:0.006, rest:0.82, fric:0.2, colA:"#ff5e5e", colB:"#ffd24a" },
+  ];
+  let ammoIdx = 0;
+
+  let payload = null, chain = null;
+
+  function spawnPayload() {
+    if (payload) { Composite.remove(world, payload); Composite.remove(world, chain); }
+    const def = PAYLOADS[ammoIdx];
+    const tip = boomTip();
+    const px = tip.x, py = tip.y + crane.cableLen;
+    if (def.kind === "box") {
+      payload = Bodies.rectangle(px, py, def.w, def.h, {
+        density: def.density, friction: def.fric, restitution: def.rest,
+        frictionAir: 0.004, label: "ball", collisionFilter: { category: CAT_BALL }
+      });
+    } else {
+      payload = Bodies.circle(px, py, def.r, {
+        density: def.density, friction: def.fric, restitution: def.rest,
+        frictionAir: def.kind === "beach" ? 0.02 : 0.004,
+        label: "ball", collisionFilter: { category: CAT_BALL }
+      });
+    }
+    payload.plugin = { def, lastBoom: 0 };
+    chain = Constraint.create({
+      pointA: { x: tip.x, y: tip.y }, bodyB: payload,
+      length: crane.cableLen, stiffness: 1, damping: 0.02
+    });
+    Composite.add(world, [payload, chain]);
+  }
+
+  function setAmmo(i) {
+    ammoIdx = i;
+    spawnPayload();
+    syncAmmoButtons();
+  }
+
+  function recallPayload() {
+    if (!payload) return;
+    const tip = boomTip();
+    Body.setPosition(payload, { x: tip.x, y: tip.y + crane.cableLen });
+    Body.setVelocity(payload, { x: 0, y: 0 });
+    Body.setAngularVelocity(payload, 0);
+  }
+
+  // ============================================================
+  //  BUILDINGS
+  // ============================================================
+  let blocks = [], totalBlocks = 0, score = 0, clearedCount = 0, cleared = false;
+  let bldIdx = 0;
 
   const PALETTES = [
-    ["#c0392b", "#e74c3c", "#a93226"],   // brick red
-    ["#2c6e8f", "#3498db", "#21618c"],   // blue glass
-    ["#7d6608", "#b7950b", "#9a7d0a"],   // sand
-    ["#117a65", "#16a085", "#0e6655"],   // teal
-    ["#6c3483", "#8e44ad", "#5b2c6f"],   // purple
+    ["#c0392b","#e74c3c","#a93226"], ["#2c6e8f","#3498db","#21618c"],
+    ["#7d6608","#b7950b","#9a7d0a"], ["#117a65","#16a085","#0e6655"],
+    ["#6c3483","#8e44ad","#5b2c6f"],
   ];
 
-  function clearBlocks() {
-    blocks.forEach(b => Composite.remove(world, b));
-    blocks = [];
-  }
+  function clearBlocks() { blocks.forEach(b => Composite.remove(world, b)); blocks = []; }
 
-  function addBlock(x, y, w, h, color) {
-    const b = Bodies.rectangle(x, y, w, h, {
-      friction: 0.6, frictionStatic: 1, restitution: 0.05, density: 0.004,
-      collisionFilter: { category: CAT_BLOCK },
-      render: { fillStyle: color },
-      label: "block"
-    });
-    b.plugin = { startX: x, startY: y, color, w, h, destroyed: false };
-    blocks.push(b);
-    Composite.add(world, b);
+  function addBlock(x, y, w, h, color, opts) {
+    const b = Bodies.rectangle(x, y, w, h, Object.assign({
+      friction: 0.6, frictionStatic: 1, restitution: 0.04, density: 0.004,
+      collisionFilter: { category: CAT_BLOCK }, label: "block"
+    }, opts || {}));
+    b.plugin = { startX: x, startY: y, color, destroyed: false };
+    blocks.push(b); Composite.add(world, b);
     return b;
   }
 
-  // Build a tower of stacked bricks (and a couple of structures for higher levels)
-  function buildLevel(n) {
-    clearBlocks();
-    const palette = PALETTES[(n - 1) % PALETTES.length];
-    const pick = () => palette[(Math.random() * palette.length) | 0];
+  // --- building generators (centered around cx, sitting on ground) ---
+  const CX = 940;
+  function pal(n){ const p = PALETTES[n % PALETTES.length]; return ()=>p[(Math.random()*p.length)|0]; }
 
-    const structures = Math.min(1 + Math.floor((n - 1) / 2), 3);
-    const baseRight = W - 90;
-    const totalSpan = 120 + structures * 70;
-    let startX = baseRight - totalSpan;
-    if (startX < crane.trolleyX + 120) startX = crane.trolleyX + 120;
-
-    let placed = 0;
-    for (let s = 0; s < structures; s++) {
-      const cols = 3 + ((n + s) % 3);          // width in bricks
-      const rows = 5 + n + s * 2;               // height in bricks
-      const bw = 56, bh = 30;
-      const ox = startX + s * (cols * bw + 50);
-      for (let r = 0; r < rows; r++) {
-        // brick-lay offset on alternating rows
-        const off = (r % 2) * (bw / 2);
-        const ncols = (r % 2) ? cols - 1 : cols;
-        for (let cI = 0; cI < ncols; cI++) {
-          const x = ox + off + cI * bw + bw / 2;
-          const y = GROUND_Y - r * bh - bh / 2;
-          if (x > W - bw / 2) continue;
-          addBlock(x, y, bw - 2, bh - 2, pick());
-          placed++;
+  const BUILDINGS = [
+    { id:"tower", name:"タワー", emoji:"🏢", build(){
+        const pick = pal(0), bw=58, bh=30, cols=4, rows=13, ox=CX-(cols*bw)/2;
+        for(let r=0;r<rows;r++){ const off=(r%2)*(bw/2); const n=(r%2)?cols-1:cols;
+          for(let c=0;c<n;c++) addBlock(ox+off+c*bw+bw/2, GROUND_Y-r*bh-bh/2, bw-2, bh-2, pick()); }
+      }},
+    { id:"wall", name:"かべ", emoji:"🧱", build(){
+        const pick = pal(2), bw=64, bh=30, cols=9, rows=9, ox=CX-(cols*bw)/2;
+        for(let r=0;r<rows;r++){ const off=(r%2)*(bw/2); const n=(r%2)?cols-1:cols;
+          for(let c=0;c<n;c++) addBlock(ox+off+c*bw+bw/2, GROUND_Y-r*bh-bh/2, bw-2, bh-2, pick()); }
+      }},
+    { id:"pyramid", name:"ピラミッド", emoji:"🔺", build(){
+        const pick = pal(3), bw=54, bh=34, rows=9;
+        for(let r=0;r<rows;r++){ const n=rows-r; const ox=CX-(n*bw)/2;
+          for(let c=0;c<n;c++) addBlock(ox+c*bw+bw/2, GROUND_Y-r*bh-bh/2, bw-3, bh-3, pick()); }
+      }},
+    { id:"house", name:"一軒家", emoji:"🏠", build(){
+        const pick = pal(0), bw=56, bh=30, cols=6, rows=6, ox=CX-(cols*bw)/2;
+        for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+          // leave a door gap on bottom-middle rows
+          if(r<2 && (c===2||c===3)) continue;
+          addBlock(ox+c*bw+bw/2, GROUND_Y-r*bh-bh/2, bw-2, bh-2, pick());
         }
-      }
-    }
-    totalBlocks = placed;
+        // roof: stacked shrinking rows (chunky triangle)
+        const rpick = pal(1); const roofRows=4;
+        for(let r=0;r<roofRows;r++){ const n=cols-r; const rx=CX-(n*bw)/2;
+          for(let c=0;c<n;c++) addBlock(rx+c*bw+bw/2, GROUND_Y-(rows+r)*bh-bh/2, bw-2, bh-2, rpick()); }
+      }},
+    { id:"jenga", name:"ジェンガ塔", emoji:"🟫", build(){
+        const plank=86, th=26, layers=12;
+        for(let r=0;r<layers;r++){ const col = (r%4<2) ? "#b9762f" : "#caa15a";
+          const y=GROUND_Y-r*th-th/2;
+          if(r%2===0){ for(let i=-1;i<=1;i++) addBlock(CX+i*(plank/3+2), y, plank/3-2, th-2, col); }
+          else { for(let i=-1;i<=1;i++) addBlock(CX, y, plank-2, th-2, col); /* placeholder */ }
+        }
+      }},
+    { id:"city", name:"ビル街", emoji:"🌆", build(){
+        const specs=[{x:CX-220,rows:9,p:1},{x:CX-30,rows:14,p:4},{x:CX+200,rows:7,p:0}];
+        for(const s of specs){ const pick=pal(s.p), bw=52,bh=30,cols=3,ox=s.x-(cols*bw)/2;
+          for(let r=0;r<s.rows;r++) for(let c=0;c<cols;c++)
+            addBlock(ox+c*bw+bw/2, GROUND_Y-r*bh-bh/2, bw-2, bh-2, pick()); }
+      }},
+  ];
+
+  function buildBuilding(i) {
+    bldIdx = i; cleared = false;
+    clearBlocks();
+    BUILDINGS[i].build();
+    totalBlocks = blocks.length;
+    syncBldButtons();
     updateHUD();
   }
 
-  // ---- Destruction tracking ----
+  // jenga: fix the odd-row to be three short planks oriented across (above placeholder was wrong)
+  // (handled below by overriding build for jenga cleanly)
+  BUILDINGS[4].build = function(){
+    const plank=88, th=26, layers=12, gap=2;
+    for(let r=0;r<layers;r++){ const col=(Math.floor(r/2)%2===0)?"#b9762f":"#caa15a";
+      const y=GROUND_Y-r*th-th/2;
+      if(r%2===0){ // three planks side by side (running along X)
+        const sw=plank/3;
+        for(let i=-1;i<=1;i++) addBlock(CX+i*(sw+gap), y, sw-gap, th-2, col);
+      } else { // one long plank across
+        addBlock(CX, y, plank, th-2, col);
+      }
+    }
+  };
+
+  // ============================================================
+  //  DESTRUCTION / SCORING
+  // ============================================================
   function destroyedCount() {
     let c = 0;
     for (const b of blocks) {
-      const dx = b.position.x - b.plugin.startX;
-      const dy = b.position.y - b.plugin.startY;
-      const moved = Math.hypot(dx, dy);
-      const tilted = Math.abs(b.angle) > 0.5;
-      if (moved > 55 || tilted) {
-        if (!b.plugin.destroyed) {
-          b.plugin.destroyed = true;
-          score += 100;
-          spawnDust(b.position.x, b.position.y, b.plugin.color, 6);
-        }
+      const moved = Math.hypot(b.position.x-b.plugin.startX, b.position.y-b.plugin.startY);
+      if (moved > 55 || Math.abs(b.angle) > 0.5) {
+        if (!b.plugin.destroyed) { b.plugin.destroyed = true; score += 100; }
         c++;
       }
     }
     return c;
   }
-
-  let cleared = false;
-  function checkClear(pct) {
+  function checkClear(pct){
     if (!cleared && pct >= 92 && totalBlocks > 0) {
-      cleared = true;
-      score += 500;            // clear bonus
+      cleared = true; clearedCount++; score += 500;
       showToast("解体完了！ +500", "#57e08a");
-      setTimeout(() => { level++; cleared = false; buildLevel(level); resetBall(); }, 1500);
     }
   }
 
-  // ---- Dust particles ----
+  // ---- dust + camera shake ----
   const dust = [];
-  function spawnDust(x, y, color, count) {
-    for (let i = 0; i < count; i++) {
-      dust.push({
-        x, y,
-        vx: (Math.random() - 0.5) * 5,
-        vy: -Math.random() * 4 - 1,
-        life: 1, r: 3 + Math.random() * 6,
-        color: Math.random() < 0.5 ? color : "#cdbfae"
-      });
-    }
+  function spawnDust(x,y,color,count){
+    for(let i=0;i<count;i++) dust.push({ x,y,
+      vx:(Math.random()-0.5)*6, vy:-Math.random()*5-1, life:1,
+      r:3+Math.random()*7, color: Math.random()<0.5?color:"#cdbfae" });
   }
-  function updateDust() {
-    for (let i = dust.length - 1; i >= 0; i--) {
-      const p = dust[i];
-      p.x += p.vx; p.y += p.vy; p.vy += 0.18; p.vx *= 0.98;
-      p.life -= 0.02;
-      if (p.life <= 0) dust.splice(i, 1);
-    }
+  function updateDust(){
+    for(let i=dust.length-1;i>=0;i--){ const p=dust[i];
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; p.vx*=0.98; p.life-=0.02;
+      if(p.life<=0) dust.splice(i,1); }
   }
-
-  // Camera shake
   let shake = 0;
 
-  // ---- Collision -> dust + shake on hard hits ----
-  Events.on(engine, "collisionStart", function (ev) {
-    for (const pair of ev.pairs) {
-      const { bodyA, bodyB } = pair;
-      const involvesBall = bodyA.label === "ball" || bodyB.label === "ball";
-      const speed = ball ? Vector.magnitude(ball.velocity) : 0;
-      if (involvesBall && speed > 6) {
-        const other = bodyA.label === "ball" ? bodyB : bodyA;
-        if (other.label === "block") {
-          const cp = pair.collision.supports[0] || other.position;
-          spawnDust(cp.x, cp.y, other.plugin ? other.plugin.color : "#ccc", Math.min(20, speed * 1.5 | 0));
-          shake = Math.min(18, speed);
-        }
+  function explode(x,y){
+    const R=185;
+    for(const b of blocks){
+      const dx=b.position.x-x, dy=b.position.y-y, d=Math.hypot(dx,dy)||1;
+      if(d<R){ const s=(1-d/R)*20;
+        Body.setVelocity(b,{ x:dx/d*s, y:dy/d*s-4 });
+        Body.setAngularVelocity(b,(Math.random()-0.5)*0.6);
+      }
+    }
+    spawnDust(x,y,"#ffb347",46);
+    spawnDust(x,y,"#ff5e3a",24);
+    shake=24;
+  }
+
+  Events.on(engine, "collisionStart", function(ev){
+    for(const pair of ev.pairs){
+      const involves = pair.bodyA.label==="ball" || pair.bodyB.label==="ball";
+      if(!involves || !payload) continue;
+      const other = pair.bodyA.label==="ball" ? pair.bodyB : pair.bodyA;
+      if(other.label!=="block" && other.label!=="ground") continue;
+      const speed = Vector.magnitude(payload.velocity);
+      const cp = (pair.collision && pair.collision.supports[0]) || other.position;
+      const def = payload.plugin.def;
+      if(def.kind==="bomb" && speed>4.5){
+        const now=performance.now();
+        if(now - payload.plugin.lastBoom > 700){ payload.plugin.lastBoom=now; explode(cp.x,cp.y); }
+      } else if(other.label==="block" && speed>6){
+        spawnDust(cp.x,cp.y, other.plugin?other.plugin.color:"#ccc", Math.min(22, speed*1.6|0));
+        shake=Math.min(18, speed);
       }
     }
   });
 
-  // ---- Input ----
+  // ============================================================
+  //  INPUT
+  // ============================================================
   const keys = {};
-  window.addEventListener("keydown", e => {
-    keys[e.key.toLowerCase()] = true;
-    if (e.code === "Space") { e.preventDefault(); resetBall(); }
+  window.addEventListener("keydown", e=>{
+    const k=e.key.toLowerCase();
+    keys[k]=true;
+    if(e.code==="Space"){ e.preventDefault(); recallPayload(); }
+    if(["arrowup","arrowdown","arrowleft","arrowright"].includes(k)) e.preventDefault();
+    if(k>="1" && k<="6"){ const i=+k-1; if(i<PAYLOADS.length) setAmmo(i); }
   });
-  window.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+  window.addEventListener("keyup", e=>{ keys[e.key.toLowerCase()]=false; });
 
-  function applyKeys() {
-    const moveSpeed = 7, chainSpeed = 5;
-    if (keys["a"] || keys["arrowleft"])  crane.trolleyX -= moveSpeed;
-    if (keys["d"] || keys["arrowright"]) crane.trolleyX += moveSpeed;
-    if (keys["w"] || keys["arrowup"])    crane.chainLen -= chainSpeed;
-    if (keys["s"] || keys["arrowdown"])  crane.chainLen += chainSpeed;
-    crane.trolleyX = Math.max(TROLLEY_MIN, Math.min(TROLLEY_MAX, crane.trolleyX));
-    crane.chainLen = Math.max(CHAIN_MIN, Math.min(CHAIN_MAX, crane.chainLen));
-    if (chain) {
-      chain.pointA.x = crane.trolleyX;
-      chain.pointA.y = crane.jibY;
-      chain.length = crane.chainLen;
-    }
+  function applyKeys(){
+    if(keys["a"]) crane.baseX -= 7;
+    if(keys["d"]) crane.baseX += 7;
+    if(keys["w"]) crane.boomAngle += 0.018;
+    if(keys["s"]) crane.boomAngle -= 0.018;
+    if(keys["arrowup"])   crane.cableLen -= 6;
+    if(keys["arrowdown"]) crane.cableLen += 6;
+    crane.baseX = Math.max(BASE_MIN, Math.min(BASE_MAX, crane.baseX));
+    crane.boomAngle = Math.max(ANG_MIN, Math.min(ANG_MAX, crane.boomAngle));
+    crane.cableLen = Math.max(CABLE_MIN, Math.min(CABLE_MAX, crane.cableLen));
+    if(chain){ const t=boomTip(); chain.pointA.x=t.x; chain.pointA.y=t.y; chain.length=crane.cableLen; }
   }
 
-  function resetBall() {
-    if (!ball) return;
-    Body.setPosition(ball, { x: crane.trolleyX, y: crane.jibY + crane.chainLen });
-    Body.setVelocity(ball, { x: 0, y: 0 });
-    Body.setAngularVelocity(ball, 0);
-  }
-
-  // Mouse drag (only grabs the ball)
   const mouse = Mouse.create(canvas);
   const mc = MouseConstraint.create(engine, {
-    mouse,
-    constraint: { stiffness: 0.2, damping: 0.1, render: { visible: false } },
-    collisionFilter: { mask: CAT_BALL }
+    mouse, constraint:{ stiffness:0.2, damping:0.1, render:{visible:false} },
+    collisionFilter:{ mask: CAT_BALL }
   });
   Composite.add(world, mc);
 
-  // ---- HUD ----
-  const el = id => document.getElementById(id);
-  function updateHUD() {
-    el("score").textContent = score;
-    el("level").textContent = level;
-    const pct = totalBlocks ? Math.round((destroyedCount() / totalBlocks) * 100) : 0;
-    el("pct").textContent = pct + "%";
-    checkClear(pct);
+  // ============================================================
+  //  RENDERING
+  // ============================================================
+  function drawBackground(){
+    const sky=ctx.createLinearGradient(0,0,0,GROUND_Y);
+    sky.addColorStop(0,"#5b9bd5"); sky.addColorStop(1,"#bcdcf5");
+    ctx.fillStyle=sky; ctx.fillRect(0,0,W,GROUND_Y);
+    ctx.fillStyle="rgba(70,90,130,0.3)";
+    let x=0, seed=9;
+    while(x<W){ const bw=60+(seed*37%60), bh=80+(seed*53%220);
+      ctx.fillRect(x,GROUND_Y-bh,bw,bh); x+=bw+18; seed=(seed*1103515245+12345)&0x7fffffff; }
+    const g=ctx.createLinearGradient(0,GROUND_Y,0,H);
+    g.addColorStop(0,"#5d7e4f"); g.addColorStop(1,"#3c5435");
+    ctx.fillStyle=g; ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
+    ctx.fillStyle="#6b8f5a"; ctx.fillRect(0,GROUND_Y,W,6);
   }
 
-  function showToast(text, color) {
-    const t = el("toast");
-    t.textContent = text;
-    t.style.color = color || "#fff";
-    t.classList.remove("show"); void t.offsetWidth; t.classList.add("show");
-  }
-
-  // ---- Rendering ----
-  function drawBackground() {
-    const sky = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
-    sky.addColorStop(0, "#5b9bd5");
-    sky.addColorStop(1, "#bcdcf5");
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, GROUND_Y);
-
-    // distant skyline silhouette
-    ctx.fillStyle = "rgba(70,90,130,0.35)";
-    let x = 0;
-    let seed = 9;
-    while (x < W) {
-      const bw = 60 + (seed * 37 % 60);
-      const bh = 80 + (seed * 53 % 220);
-      ctx.fillRect(x, GROUND_Y - bh, bw, bh);
-      x += bw + 18;
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    }
-
-    // ground
-    const g = ctx.createLinearGradient(0, GROUND_Y, 0, H);
-    g.addColorStop(0, "#5d7e4f");
-    g.addColorStop(1, "#3c5435");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
-    ctx.fillStyle = "#6b8f5a";
-    ctx.fillRect(0, GROUND_Y, W, 6);
-  }
-
-  function drawCrane() {
-    const { mastX, jibY, jibEnd, trolleyX, chainLen } = crane;
-    ctx.lineCap = "round";
-
-    // mast (lattice)
-    ctx.strokeStyle = "#f1c40f";
-    ctx.lineWidth = 10;
-    ctx.strokeRect(mastX - 16, jibY, 32, GROUND_Y - jibY);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "rgba(120,90,0,.6)";
-    for (let y = jibY; y < GROUND_Y; y += 34) {
-      ctx.beginPath(); ctx.moveTo(mastX - 16, y); ctx.lineTo(mastX + 16, y + 34); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(mastX + 16, y); ctx.lineTo(mastX - 16, y + 34); ctx.stroke();
-    }
-
-    // jib (horizontal arm)
-    ctx.fillStyle = "#f1c40f";
-    ctx.fillRect(mastX - 16, jibY - 14, jibEnd - mastX + 16, 20);
-    // counterweight on left
-    ctx.fillStyle = "#34495e";
-    ctx.fillRect(mastX - 70, jibY - 18, 56, 40);
-
-    // trolley
-    ctx.fillStyle = "#2c3e50";
-    ctx.fillRect(trolleyX - 22, jibY - 10, 44, 22);
-    ctx.fillStyle = "#e67e22";
-    ctx.fillRect(trolleyX - 22, jibY - 10, 44, 5);
-
-    // operator cab near top of mast
-    ctx.fillStyle = "#2c3e50";
-    ctx.fillRect(mastX - 22, jibY + 6, 44, 30);
-    ctx.fillStyle = "#aee3ff";
-    ctx.fillRect(mastX - 16, jibY + 11, 24, 14);
-
-    // chain / wire to ball
-    if (ball) {
-      ctx.strokeStyle = "#1a1a1a";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(trolleyX, jibY);
-      ctx.lineTo(ball.position.x, ball.position.y);
-      ctx.stroke();
-      // hook link
-      ctx.fillStyle = "#555";
-      ctx.beginPath(); ctx.arc(trolleyX, jibY, 5, 0, 7); ctx.fill();
-    }
-  }
-
-  function drawBall() {
-    if (!ball) return;
-    const { x, y } = ball.position;
-    // shadow
-    ctx.fillStyle = "rgba(0,0,0,0.18)";
-    ctx.beginPath();
-    ctx.ellipse(x, GROUND_Y + 2, BALL_R * 1.1, 10, 0, 0, 7); ctx.fill();
-    // sphere
-    const grad = ctx.createRadialGradient(x - 12, y - 14, 6, x, y, BALL_R);
-    grad.addColorStop(0, "#7a7f88");
-    grad.addColorStop(0.6, "#3a3f47");
-    grad.addColorStop(1, "#16191e");
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.arc(x, y, BALL_R, 0, 7); ctx.fill();
-    // rivets
-    ctx.fillStyle = "rgba(255,255,255,.18)";
-    ctx.beginPath(); ctx.arc(x - 10, y - 12, 4, 0, 7); ctx.fill();
-  }
-
-  function drawBlocks() {
-    for (const b of blocks) {
-      const v = b.vertices;
-      ctx.beginPath();
-      ctx.moveTo(v[0].x, v[0].y);
-      for (let i = 1; i < v.length; i++) ctx.lineTo(v[i].x, v[i].y);
-      ctx.closePath();
-      ctx.fillStyle = b.plugin.color;
-      ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = "rgba(0,0,0,0.28)";
-      ctx.stroke();
-      // top highlight
-      ctx.beginPath();
-      ctx.moveTo(v[0].x, v[0].y); ctx.lineTo(v[1].x, v[1].y);
-      ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.lineWidth = 2; ctx.stroke();
-    }
-  }
-
-  function drawDust() {
-    for (const p of dust) {
-      ctx.globalAlpha = Math.max(0, p.life);
-      ctx.fillStyle = p.color;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * p.life, 0, 7); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  // ---- Main loop ----
-  let running = false;
-  let last = performance.now();
-
-  function frame(now) {
-    const dt = Math.min(33, now - last);
-    last = now;
-
-    if (running) {
-      applyKeys();
-      Engine.update(engine, dt);
-      updateDust();
-      updateHUD();
-    }
-
-    // camera shake
-    let sx = 0, sy = 0;
-    if (shake > 0.4) {
-      sx = (Math.random() - 0.5) * shake;
-      sy = (Math.random() - 0.5) * shake;
-      shake *= 0.86;
-    } else shake = 0;
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, W, H);
+  function drawCrane(){
+    const bx=crane.baseX, py=pivotY(), tip=boomTip();
+    // ---- carrier / truck base ----
+    ctx.fillStyle="#2c3e50"; ctx.fillRect(bx-58, GROUND_Y-46, 116, 46);
+    ctx.fillStyle="#1a252f";
+    for(const wx of [-38,-12,14,40]){ ctx.beginPath(); ctx.arc(bx+wx, GROUND_Y-4, 11, 0, 7); ctx.fill(); }
+    // cab
+    ctx.fillStyle="#e67e22"; ctx.fillRect(bx-50, py-6, 100, GROUND_Y-46-(py-6));
+    ctx.fillStyle="#f5b041"; ctx.fillRect(bx-50, py-6, 100, 8);
+    ctx.fillStyle="#aee3ff"; ctx.fillRect(bx+18, py+4, 26, 18);
+    // ---- boom (lattice arm) ----
     ctx.save();
-    ctx.translate(sx, sy);
-    drawBackground();
-    drawBlocks();
-    drawCrane();
-    drawBall();
-    drawDust();
+    ctx.translate(bx, py); ctx.rotate(-crane.boomAngle);
+    const L=crane.boomLen;
+    ctx.fillStyle="#f1c40f"; ctx.fillRect(0,-9,L,18);
+    ctx.strokeStyle="rgba(120,90,0,.55)"; ctx.lineWidth=3;
+    for(let s=0;s<L;s+=30){ ctx.beginPath(); ctx.moveTo(s,-9); ctx.lineTo(s+30,9); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s+30,-9); ctx.lineTo(s,9); ctx.stroke(); }
+    ctx.fillStyle="#34495e"; ctx.beginPath(); ctx.arc(0,0,13,0,7); ctx.fill(); // pivot
     ctx.restore();
+    // ---- wire from tip to payload ----
+    if(payload){
+      ctx.strokeStyle="#1a1a1a"; ctx.lineWidth=4;
+      ctx.beginPath(); ctx.moveTo(tip.x,tip.y); ctx.lineTo(payload.position.x,payload.position.y); ctx.stroke();
+      ctx.fillStyle="#555"; ctx.beginPath(); ctx.arc(tip.x,tip.y,6,0,7); ctx.fill();
+    }
+  }
 
+  function drawPayload(){
+    if(!payload) return;
+    const def=payload.plugin.def, p=payload.position, a=payload.angle;
+    // shadow
+    ctx.fillStyle="rgba(0,0,0,0.16)";
+    ctx.beginPath(); ctx.ellipse(p.x, GROUND_Y+2, (def.r||def.w/2)*1.1, 10, 0, 0, 7); ctx.fill();
+
+    if(def.kind==="box"){
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(a);
+      const w=def.w,h=def.h;
+      const gr=ctx.createLinearGradient(-w/2,-h/2,w/2,h/2);
+      gr.addColorStop(0,def.colA); gr.addColorStop(1,def.colB);
+      ctx.fillStyle=gr; ctx.fillRect(-w/2,-h/2,w,h);
+      ctx.strokeStyle="#222"; ctx.lineWidth=3; ctx.strokeRect(-w/2,-h/2,w,h);
+      ctx.strokeStyle="#cfd6dd"; ctx.lineWidth=4;
+      ctx.beginPath(); ctx.arc(6,0,11,0,7); ctx.stroke();           // safe dial
+      ctx.beginPath(); ctx.moveTo(6,0); ctx.lineTo(6,-11); ctx.stroke();
+      ctx.restore(); return;
+    }
+
+    const r=def.r;
+    if(def.kind==="beach"){
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(a);
+      const cols=["#ff5e5e","#ffd24a","#57c2e0","#7ee08a","#ffffff","#ff8ad8"];
+      for(let i=0;i<6;i++){ ctx.fillStyle=cols[i]; ctx.beginPath(); ctx.moveTo(0,0);
+        ctx.arc(0,0,r, i*Math.PI/3, (i+1)*Math.PI/3); ctx.closePath(); ctx.fill(); }
+      ctx.fillStyle="rgba(255,255,255,.85)"; ctx.beginPath(); ctx.arc(0,0,6,0,7); ctx.fill();
+      ctx.restore(); return;
+    }
+
+    // sphere / bomb / spiked
+    if(def.kind==="spiked"){
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(a);
+      ctx.fillStyle=def.colB;
+      for(let i=0;i<12;i++){ const ang=i*Math.PI/6;
+        ctx.beginPath(); ctx.moveTo(Math.cos(ang)*r, Math.sin(ang)*r);
+        ctx.lineTo(Math.cos(ang)*(r+12), Math.sin(ang)*(r+12));
+        ctx.lineTo(Math.cos(ang+0.18)*r, Math.sin(ang+0.18)*r); ctx.closePath(); ctx.fill(); }
+      ctx.restore();
+    }
+    const grad=ctx.createRadialGradient(p.x-r*0.35,p.y-r*0.4,r*0.15,p.x,p.y,r);
+    grad.addColorStop(0,def.colA); grad.addColorStop(1,def.colB);
+    ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(p.x,p.y,r,0,7); ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.2)"; ctx.beginPath(); ctx.arc(p.x-r*0.3,p.y-r*0.34,r*0.16,0,7); ctx.fill();
+    if(def.kind==="bomb"){
+      // fuse
+      ctx.strokeStyle="#caa15a"; ctx.lineWidth=4;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y-r); ctx.quadraticCurveTo(p.x+14,p.y-r-16,p.x+6,p.y-r-24); ctx.stroke();
+      ctx.fillStyle="#ffcf4a"; ctx.beginPath(); ctx.arc(p.x+6,p.y-r-26,4,0,7); ctx.fill();
+    }
+  }
+
+  function drawBlocks(){
+    for(const b of blocks){
+      const v=b.vertices;
+      ctx.beginPath(); ctx.moveTo(v[0].x,v[0].y);
+      for(let i=1;i<v.length;i++) ctx.lineTo(v[i].x,v[i].y);
+      ctx.closePath(); ctx.fillStyle=b.plugin.color; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle="rgba(0,0,0,.28)"; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(v[0].x,v[0].y); ctx.lineTo(v[1].x,v[1].y);
+      ctx.strokeStyle="rgba(255,255,255,.22)"; ctx.lineWidth=2; ctx.stroke();
+    }
+  }
+
+  function drawDust(){
+    for(const p of dust){ ctx.globalAlpha=Math.max(0,p.life);
+      ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life,0,7); ctx.fill(); }
+    ctx.globalAlpha=1;
+  }
+
+  // ============================================================
+  //  LOOP
+  // ============================================================
+  let running=false, last=performance.now();
+  function frame(now){
+    const dt=Math.min(33, now-last); last=now;
+    if(running){ applyKeys(); Engine.update(engine,dt); updateDust(); updateHUD(); }
+    let sx=0,sy=0;
+    if(shake>0.4){ sx=(Math.random()-0.5)*shake; sy=(Math.random()-0.5)*shake; shake*=0.86; } else shake=0;
+    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,W,H);
+    ctx.save(); ctx.translate(sx,sy);
+    drawBackground(); drawBlocks(); drawCrane(); drawPayload(); drawDust();
+    ctx.restore();
     requestAnimationFrame(frame);
   }
 
-  // ---- Buttons ----
-  el("btnReset").onclick = resetBall;
-  el("btnRebuild").onclick = () => { score = Math.max(0, score - 0); cleared = false; buildLevel(level); resetBall(); };
-  el("btnNext").onclick = () => { level++; cleared = false; buildLevel(level); resetBall(); showToast("LEVEL " + level, "#ffd24a"); };
+  // ============================================================
+  //  UI WIRING
+  // ============================================================
+  const el = id=>document.getElementById(id);
+  function updateHUD(){
+    el("score").textContent=score;
+    el("cleared").textContent=clearedCount;
+    const pct=totalBlocks?Math.round((destroyedCount()/totalBlocks)*100):0;
+    el("pct").textContent=pct+"%"; checkClear(pct);
+  }
+  function showToast(t,color){ const e=el("toast"); e.textContent=t; e.style.color=color||"#fff";
+    e.classList.remove("show"); void e.offsetWidth; e.classList.add("show"); }
 
-  el("btnStart").onclick = () => {
-    el("overlay").classList.add("hidden");
-    if (!running) { running = true; showToast("解体スタート！", "#ffd24a"); }
-  };
+  // build ammo + building chips
+  const barAmmo=el("barAmmo"), barBld=el("barBld");
+  PAYLOADS.forEach((d,i)=>{ const b=document.createElement("button");
+    b.className="chip ammo"; b.dataset.i=i; b.innerHTML=d.emoji+" "+d.name+" <small style='opacity:.6'>"+(i+1)+"</small>";
+    b.onclick=()=>setAmmo(i); barAmmo.appendChild(b); });
+  BUILDINGS.forEach((d,i)=>{ const b=document.createElement("button");
+    b.className="chip bld"; b.dataset.i=i; b.textContent=d.emoji+" "+d.name;
+    b.onclick=()=>buildBuilding(i); barBld.insertBefore(b, el("btnRebuild")); });
 
-  // ---- Init ----
-  spawnBall();
-  buildLevel(1);
+  function syncAmmoButtons(){ barAmmo.querySelectorAll(".ammo").forEach(b=>
+    b.classList.toggle("active", +b.dataset.i===ammoIdx)); }
+  function syncBldButtons(){ barBld.querySelectorAll(".bld").forEach(b=>
+    b.classList.toggle("active", +b.dataset.i===bldIdx)); }
+
+  el("btnReset").onclick=recallPayload;
+  el("btnRebuild").onclick=()=>buildBuilding(bldIdx);
+  el("btnStart").onclick=()=>{ el("overlay").classList.add("hidden");
+    if(!running){ running=true; showToast("解体スタート！","#ffd24a"); } };
+
+  // ---- init ----
+  setAmmo(0);
+  buildBuilding(0);
   requestAnimationFrame(frame);
 })();
 </script>
